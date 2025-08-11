@@ -1,0 +1,29 @@
+/* =====================================================================
+   src/index.css
+   ===================================================================== */
+
+/* 1) Use Alumni Sans Pinstripe as the single global font */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #030303;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 100;
+  box-sizing: border-box;
+  overflow: auto;
+  overflow-x: hidden; 
+    color: #ffffff;
+}
+
+/* 2) Ensure every element (and pseudo-element) inherits “Alumni Sans Pinstripe” */
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+}

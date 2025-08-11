@@ -1,0 +1,26 @@
+.title-chip {
+    position: absolute;
+    inset: auto auto 1rem 1rem;
+    z-index: 25;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+  
+  .title-chip--bottom-right { inset: auto 1rem 1rem auto; }
+  
+  .title-chip__inner {
+    display: inline-flex;
+    align-items: center;
+    padding: .45rem .75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: .9rem;
+    line-height: 1.1;
+    letter-spacing: .2px;
+  }
+  

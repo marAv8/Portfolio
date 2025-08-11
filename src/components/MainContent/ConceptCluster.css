@@ -1,0 +1,7 @@
+/* src/components/MainContent/ConceptCluster.css */
+.sketch-description-wrapper {
+    position: absolute;
+    pointer-events: none;
+    z-index: 20;
+  }
+  

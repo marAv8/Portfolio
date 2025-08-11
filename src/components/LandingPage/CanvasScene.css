@@ -1,0 +1,64 @@
+/* CanvasScene.css */
+.canvas-black-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  z-index: 5;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+.canvas-black-overlay.fade-out {
+  opacity: 0;
+}
+
+
+/* CanvasScene.css addition */
+.landing-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.canvas-column {
+  flex: 1;
+  position: relative;
+  transform: translateX(40px); 
+  z-index: 0;
+}
+
+.landing-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+
+/* Canvas takes remaining space */
+.canvas-column {
+  flex: 1;
+  position: relative;
+  z-index: 0;
+}
+
+/* Mobile: stack nav on top, canvas below */
+@media (max-width: 768px) {
+  .landing-layout {
+    flex-direction: column;
+  }
+
+  .nav-column {
+    width: 100%;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .canvas-column {
+    width: 100%;
+    height: 100vh;
+  }
+}

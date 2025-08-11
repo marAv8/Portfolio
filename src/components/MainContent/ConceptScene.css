@@ -1,0 +1,23 @@
+/* src/components/MainContent/ConceptScene.css */
+
+.canvas-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.concept-canvas {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+.concept-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.94);
+  z-index: 999;
+}

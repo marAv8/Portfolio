@@ -1,0 +1,43 @@
+/* src/components/UI/PaginationDots.css */
+
+.pagination-dots-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 10px !important;
+    z-index: 9999 !important;
+    pointer-events: auto;
+  }
+  
+  .pagination-dots-container.mobile {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: transparent;
+  }
+  
+  .pagination-dots-container.desktop {
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .pagination-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(3px);
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+  }
+  
+  .pagination-dot.active {
+    background: white;
+    box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.6);
+  }
+  

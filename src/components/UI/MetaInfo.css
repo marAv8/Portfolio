@@ -1,0 +1,66 @@
+/* ===== Base (desktop) ===== */
+.meta-info {
+  /* position variables you can tweak globally */
+  --meta-left: 2rem;
+  --meta-top: 1.5rem;
+  --meta-right: 1rem;
+  --meta-color: #ffffff;
+  --meta-glow-color: rgba(255,255,255,0.75);
+  --meta-glow-strength: 0.0;
+  --meta-shadow-strength: 0.35;
+  --meta-max-width: 28rem;
+
+  position: absolute;      /* anchors to the parent wrapper (relative) */
+  top: var(--meta-top);
+  left: var(--meta-left);
+  z-index: 3;
+  color: var(--meta-color);
+  max-width: var(--meta-max-width);
+  pointer-events: none;
+
+  text-shadow:
+    0 1px 2px rgba(0,0,0,var(--meta-shadow-strength)),
+    0 0 10px color-mix(in srgb, var(--meta-glow-color) calc(var(--meta-glow-strength)*100%), transparent);
+
+  background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0));
+  backdrop-filter: blur(2px);
+  padding: 0.25rem 0;
+}
+
+.meta-info--top-right {
+  left: auto;
+  right: var(--meta-right);
+}
+
+/* type */
+.meta-info__title { font-size: 1.2rem; font-weight: 700; letter-spacing: .2px; margin-bottom: .25rem; }
+.meta-info__year  { font-size: .95rem; opacity: .85; margin-bottom: .35rem; }
+.meta-info__desc  { font-size: 1rem; line-height: 1.35; opacity: .96; }
+
+/* ===== Tablet (≤ 1024px) ===== */
+@media (max-width: 1024px) {
+  .meta-info {
+    --meta-left: 1.5rem;
+    --meta-top: 1.25rem;
+    --meta-max-width: 22rem;
+  }
+  .meta-info__title { font-size: 1.1rem; }
+  .meta-info__desc  { font-size: .98rem; }
+}
+
+/* ===== Mobile (≤ 640px) ===== */
+@media (max-width: 640px) {
+  .meta-info {
+    /* push it down to clear your top nav on phones */
+    --meta-left: 1rem;
+    --meta-top: 3.25rem;     /* <- adjust this if your nav is taller */
+    --meta-max-width: calc(100vw - 2rem);
+  }
+  .meta-info__title { font-size: 1.02rem; }
+  .meta-info__year  { font-size: .85rem; }
+  .meta-info__desc  { font-size: .95rem; line-height: 1.3; }
+}
+
+/* optional theme */
+.meta-theme-warm { --meta-color:#fff6ea; --meta-glow-color:#ffcf99; --meta-glow-strength:.35; }
+.meta-theme-cool { --meta-color:#e7f3ff; --meta-glow-color:#9bd0ff; --meta-glow-strength:.35; }
