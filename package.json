@@ -16,6 +16,8 @@
     "@react-three/drei": "^10.0.6",
     "@react-three/fiber": "^9.2.0",
     "@react-three/postprocessing": "^3.0.4",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "babel-plugin-glsl": "^1.0.0",
     "embla-carousel-react": "^8.6.0",
     "ethers": "^6.13.5",
