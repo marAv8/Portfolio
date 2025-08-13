@@ -58,15 +58,25 @@ export default function CanvasScene({ modalOpen = false }) {
             <SceneOverlay visible={modalOpen} />
 
             <Suspense fallback={null}>
-              <group
-                position={[horizontalNudge, 0, 0]}
-                scale={isMobile ? [0.75, 0.75, 0.75] : [1, 1, 1]}
-              >
-                {assets.map((asset, idx) => (
-                  <AssetScroller key={idx} {...asset} speed={12} />
-                ))}
-              </group>
-            </Suspense>
+  <group
+    position={[horizontalNudge, 0, 0]}
+    scale={isMobile ? [0.75, 0.75, 0.75] : [1, 1, 1]}
+  >
+    {assets.map((a) => (
+      <AssetScroller
+        key={`${a.originalUrl || a.url}-${a.position?.join(',')}`} // more stable than idx
+        isVideo={a.isVideo}
+        url={a.url}                 // thumb (_512.webp) if image
+        originalUrl={a.originalUrl} // fallback to original PNG/JPG
+        size={a.size}
+        position={a.position}
+        rotation={a.rotation || [0, 0, 0]}
+        speed={12}                  // keep your override
+      />
+    ))}
+  </group>
+</Suspense>
+
           </Canvas>
         </ModalContext.Provider>
       </div>
