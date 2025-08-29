@@ -1,4 +1,16 @@
 // src/assets/assetData.js
+import { abyssAssets } from './assetsLeft';
+// Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
+const toVariantUrls = (url) => {
+  if (typeof url !== 'string') return { thumb: url, full: url };
+  const dot = url.lastIndexOf('.');
+  if (dot < 0) return { thumb: url, full: url };
+  const base = url.slice(0, dot);
+  return {
+    thumb: `${base}_512.webp`,
+    full:  `${base}_1600.webp`,
+  };
+};
 
 const rawAssets = [
   { url: '/media/CeremonyStriation.png', size: [40, 40] },
@@ -49,7 +61,7 @@ function sizeMultiplierFor(z) {
 
 const DEPTH_LAYERS = [
   { z: -100, size: sizeMultiplierFor(-100), speed: 10 },
-  { z: -250, size: sizeMultiplierFor(-200), speed: 8 },
+  { z: -250, size: sizeMultiplierFor(-250), speed: 8 },
   { z: -350, size: sizeMultiplierFor(-350), speed: 6 },
 ];
 
@@ -91,8 +103,15 @@ for (let s = 0; s < STACK_COUNT; s++) {
     const size = [rawW * layer.size, rawH * layer.size];
     const speed = 10;
 
+    // Use small thumbs for images in the scatter; leave videos untouched
+    const isImg = !asset.isVideo;
+    const v = isImg ? toVariantUrls(asset.url) : {};
+    const displayUrl = isImg ? v.thumb : asset.url;
+
     assets.push({
-      url: asset.url,
+      url: displayUrl,                    
+      full: isImg ? v.full : undefined,
+      originalUrl: asset.url,  
       isVideo: asset.isVideo || false,
       size,
       position,
@@ -101,9 +120,9 @@ for (let s = 0; s < STACK_COUNT; s++) {
   });
 }
 
-// Root Cluster Digital Stones
+// Root Cluster Digital Stones (kept as-is)
 const center = [0, 1, 1.5];
-const radius = 0.5; // adjust if you want a wider/larger ring
+const radius = 0.5;
 const count = 6;
 const angleStep = (Math.PI * 2) / count;
 
@@ -123,6 +142,14 @@ const digitalStones = Array.from({ length: count }).map((_, i) => {
   };
 });
 
+// Enrich cluster images with {thumb, full} automatically
+const enrichClusterImages = (images = []) =>
+  images.map((img) => {
+    if (!img?.url) return img;
+    const { thumb, full } = toVariantUrls(img.url);
+    return { ...img, thumb, full };
+  });
+
 export const conceptAssets = [
   {
     id: 'cluster-root',
@@ -131,7 +158,7 @@ export const conceptAssets = [
     title: 'Root Sketches',
     subtitle: 'Celestial Bodies',
     year: '2022',
-    images: [
+    images: enrichClusterImages([
       {
         url: '/media/concepts/Root/RootAya.png',
         position: [0, 1.4, -2],
@@ -163,9 +190,16 @@ export const conceptAssets = [
         scale: [1, 1.3, 1],
         rotation: [0, 0, 0],
       },
-
       // ✨ Clean circularly-oriented digital stones
       ...digitalStones,
-    ],
+    ]),
   },
+  {
+    id: 'cluster-abyss',
+    label: 'Abyss',
+    position: [-3, -1, -2],
+    scale: [1, 1, 1],
+    images: abyssAssets,  // ✅ good
+  },
+  
 ];

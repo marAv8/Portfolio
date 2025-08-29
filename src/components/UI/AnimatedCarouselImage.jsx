@@ -21,24 +21,31 @@ export default function AnimatedCarouselImage({ image, index, direction = 'next'
     config: { tension: 170, friction: 22 },
     exitBeforeEnter: true,
   });
-
   return transitions((style, item) =>
-    item ? (
-      <animated.img
-        src={item.url}
-        alt={`Cluster image ${index + 1}`}
-        className="carousel-image"
-        style={{
-          ...style,
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-        }}
-      />
-    ) : null
-  );
-}
+  item ? (
+    <animated.img
+      src={item.full || item.url}                      // prefer high-res full, else original
+      onError={(e) => {                                // fallback if the _1600.webp 404s
+        e.currentTarget.onerror = null;                // prevent loops
+        e.currentTarget.src = item.url || e.currentTarget.src;
+      }}
+      alt={item.title || item.alt || 'Cluster image'}
+      className="carousel-image"
+      style={{
+        ...style,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+      }}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+    />
+  ) : null
+);
 
+
+    }
