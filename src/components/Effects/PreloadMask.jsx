@@ -1,3 +1,4 @@
+//PreloadMask.jsx
 import React, { useEffect, useState } from 'react';
 
 export default function PreloadMask({ duration = 3000 }) {

@@ -1,5 +1,5 @@
 // src/assets/assetData.js
-
+import { abyssAssets } from './assetsLeft';
 // Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
 const toVariantUrls = (url) => {
   if (typeof url !== 'string') return { thumb: url, full: url };
@@ -61,7 +61,7 @@ function sizeMultiplierFor(z) {
 
 const DEPTH_LAYERS = [
   { z: -100, size: sizeMultiplierFor(-100), speed: 10 },
-  { z: -250, size: sizeMultiplierFor(-200), speed: 8 },
+  { z: -250, size: sizeMultiplierFor(-250), speed: 8 },
   { z: -350, size: sizeMultiplierFor(-350), speed: 6 },
 ];
 
@@ -194,4 +194,12 @@ export const conceptAssets = [
       ...digitalStones,
     ]),
   },
+  {
+    id: 'cluster-abyss',
+    label: 'Abyss',
+    position: [-3, -1, -2],
+    scale: [1, 1, 1],
+    images: abyssAssets,  // ✅ good
+  },
+  
 ];

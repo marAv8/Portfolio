@@ -47,6 +47,8 @@ export default function RadialFadeDisk({
   color = [1.0, 0.96, 0.82], //changes overhead Radial color
   opacity = 1.0,
   power = 4.5,
+  pulseAmp = 0.05,  //  (default = current behavior)
+  pulseHz = 0.5,
 }) {
   const ref = useRef();
 
@@ -54,8 +56,7 @@ export default function RadialFadeDisk({
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     if (ref.current) {
-      ref.current.uniforms.uOpacity.value = opacity + 0.05 * Math.sin(t * 0.5);
-    }
+      ref.current.uniforms.uOpacity.value = opacity + pulseAmp * Math.sin(t * (2 * Math.PI * pulseHz));    }
   });
 
   // Imperatively update color and power on change
