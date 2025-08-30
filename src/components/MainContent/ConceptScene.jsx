@@ -1,5 +1,12 @@
 // src/components/MainContent/ConceptScene.jsx
-import React, { useEffect, useState, useMemo, useRef, Suspense, useCallback } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  Suspense,
+  useCallback,
+} from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import {
@@ -7,94 +14,121 @@ import {
   PerspectiveCamera,
   AdaptiveDpr,
   PerformanceMonitor,
-  useProgress,
+  useProgress, // for ProgressReporter
 } from '@react-three/drei';
 
 import { useScreenSize } from '../../contexts/ScreenSizeContext';
 import { conceptAssets } from '../../assets/assetData';
+import PreloadMask from '../Effects/PreloadMask'; // ✅ single global mask
 
 const ConceptCluster = React.lazy(() => import('./ConceptCluster'));
 const AbyssCluster   = React.lazy(() => import('./AbyssCluster'));
 const ClusterOverlay = React.lazy(() => import('../Overlays/RootOverlay'));
 
-// Slightly tweaked to accept a `done` flag
-function LoadingCover({ done }) {
-  const { progress } = useProgress();
-  const ok = done && progress > 12; // wait for chunks + a bit of asset progress
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'black',
-        opacity: ok ? 0 : 1,
-        transition: 'opacity 500ms ease',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}
-    />
-  );
-}
-
 const deg = (d) => THREE.MathUtils.degToRad(d);
+
+/** Reads drei's loading progress from inside <Canvas> and reports it up */
+function ProgressReporter({ onChange }) {
+  const { progress, active, loaded, total, item } = useProgress();
+  useEffect(() => {
+    onChange?.({ progress, active, loaded, total, item });
+  }, [progress, active, loaded, total, item, onChange]);
+  return null;
+}
 
 export default function ConceptScene() {
   const [activeClusterId, setActiveClusterId] = useState(null);
-  const [hoverFocusId, setHoverFocusId] = useState(null);
-  const [hasInteracted, setHasInteracted] = useState(false);
-  const [lite, setLite] = useState(false);
+  const [hoverFocusId, setHoverFocusId]       = useState(null);
+  const [lite, setLite]                       = useState(false);
 
   // isolate view while editing
   const [isolateId, setIsolateId] = useState(null);
 
-  // NEW: preload both lazy chunks and gate render until ready
+  // Preload both lazy chunks so they appear together
   const [chunksReady, setChunksReady] = useState(false);
   useEffect(() => {
     let alive = true;
-    Promise.all([import('./ConceptCluster'), import('./AbyssCluster')]).then(() => {
+    Promise.all([
+      import('./ConceptCluster'),
+      import('./AbyssCluster'),
+    ]).then(() => {
       if (alive) setChunksReady(true);
     });
     return () => { alive = false; };
   }, []);
 
-  // NEW: generic visibility set (works for any number of clusters)
+  // Track asset progress from inside Canvas
+  const [loadProgress, setLoadProgress] = useState(0);
+
+  // Show/hide the global mask with a tiny settle delay (prevents pop)
+  const sceneReady = chunksReady && loadProgress >= 99;
+  const [maskVisible, setMaskVisible] = useState(true);
+  useEffect(() => {
+    if (sceneReady) {
+      const t = setTimeout(() => setMaskVisible(false), 150);
+      return () => clearTimeout(t);
+    } else {
+      setMaskVisible(true);
+    }
+  }, [sceneReady]);
+
+  // Visibility for now & future clusters (via URL params)
   const [visibleIds, setVisibleIds] = useState(new Set());
+  useEffect(() => {
+    const allIds = new Set(conceptAssets.map(c => c.id));
+    let next = new Set(allIds); // default: show all
+    try {
+      const qs  = new URLSearchParams(window.location.search);
+      const vis = qs.get('visible'); // 'all' | 'none' | csv
+      const iso = qs.get('isolate'); // one id
+      if (vis) {
+        if (vis === 'none') next = new Set();
+        else if (vis !== 'all') {
+          next = new Set(vis.split(',').map(s => s.trim()).filter(Boolean));
+        }
+      }
+      if (iso) setIsolateId(iso);
+    } catch {}
+    setVisibleIds(next);
+  }, []);
+
+  const shouldShow = useCallback((id) => {
+    if (isolateId && isolateId !== id) return false;
+    return visibleIds.has(id);
+  }, [isolateId, visibleIds]);
 
   const controlsRef   = useRef(null);
   const clusterRefs   = useRef(new Map()); // id -> Object3D
   const hoverTimerRef = useRef(null);
 
-  // target used when clearing focus (matches OrbitControls target below)
   const defaultTarget = useRef(new THREE.Vector3(0, -3.0, 0));
 
-  // Turn OrbitControls on/off from children
+  // Enable/disable orbit controls (children call this)
   const setControlsEnabled = (enabled) => {
     if (controlsRef.current) controlsRef.current.enabled = enabled;
   };
 
-  // Expose each cluster's Object3D so we can focus it
+  // Parent receives each cluster's Object3D so we can focus it
   const registerClusterRef = useCallback((id, obj3d) => {
     if (!id) return;
     if (!obj3d) clusterRefs.current.delete(id);
     else clusterRefs.current.set(id, obj3d);
   }, []);
 
-  // Focus a cluster by id (keeps current azimuth/elevation, sets a new distance)
+  // Focus a cluster by id (keep azimuth/elevation, adjust distance)
   const focusCluster = useCallback(
     (id, { isolate = false, distance = 28, liftY = 0.5 } = {}) => {
       const ctrl = controlsRef.current;
-      const cam  = ctrl?.object; // camera used by OrbitControls
+      const cam  = ctrl?.object;
       const node = clusterRefs.current.get(id);
       if (!ctrl || !cam || !node) return;
 
-      // get world center of cluster
       node.updateWorldMatrix(true, true);
       const center = new THREE.Vector3().setFromMatrixPosition(node.matrixWorld);
       center.y += liftY;
 
-      // keep current view direction, just change the distance
       const prevTarget = ctrl.target.clone();
-      const offset     = cam.position.clone().sub(prevTarget); // vector from target -> camera
+      const offset     = cam.position.clone().sub(prevTarget);
       const dir        = offset.normalize();
       const newPos     = center.clone().addScaledVector(dir, distance);
 
@@ -107,7 +141,6 @@ export default function ConceptScene() {
     []
   );
 
-  // Clear focus & isolation (keeps current camera offset)
   const clearFocus = useCallback(() => {
     const ctrl = controlsRef.current;
     const cam  = ctrl?.object;
@@ -120,7 +153,7 @@ export default function ConceptScene() {
     setIsolateId(null);
   }, []);
 
-  // DEV: keyboard helpers
+  // DEV helpers
   useEffect(() => {
     const onKey = (e) => {
       const k = e.key.toLowerCase();
@@ -139,7 +172,7 @@ export default function ConceptScene() {
     return () => window.removeEventListener('keydown', onKey);
   }, [focusCluster, clearFocus]);
 
-  // DEV: URL param to auto-focus on load: /concepts?focus=abyss
+  // Optional: /concepts?focus=abyss auto-focus
   useEffect(() => {
     try {
       const p = new URLSearchParams(window.location.search);
@@ -149,88 +182,42 @@ export default function ConceptScene() {
     } catch {}
   }, [focusCluster]);
 
-  // Parse URL once for generic visibility/isolation
-  // ?visible=all | none | id1,id2  and/or  ?isolate=<id>
-  useEffect(() => {
-    const allIds = new Set(conceptAssets.map(c => c.id));
-    let next = new Set(allIds); // default: show all
-    try {
-      const qs  = new URLSearchParams(window.location.search);
-      const vis = qs.get('visible'); // 'all' | 'none' | csv
-      const iso = qs.get('isolate'); // one id
-      if (vis) {
-        if (vis === 'none') next = new Set();
-        else if (vis !== 'all') {
-          next = new Set(
-            vis.split(',').map(s => s.trim()).filter(Boolean)
-          );
-        }
-      }
-      if (iso) setIsolateId(iso); // reuse existing isolation logic
-    } catch {}
-    setVisibleIds(next);
-  }, []);
-
-  // Helper: should a given cluster render?
-  const shouldShow = useCallback((id) => {
-    if (isolateId && isolateId !== id) return false; // isolation wins
-    return visibleIds.has(id);
-  }, [isolateId, visibleIds]);
-
-  // Hover changes from clusters: (id, isOver)
-  const FOCUS_ON_HOVER = false; // disabled for now
-  const handleHoverChange = (id, isOver) => {
+  // Hover handler (kept simple)
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const handleHoverChange = () => {
     if (!hasInteracted) setHasInteracted(true);
-    if (activeClusterId || !FOCUS_ON_HOVER) return;
-
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    hoverTimerRef.current = setTimeout(() => {
-      if (isOver) {
-        if (hoverFocusId === id) return;
-        setHoverFocusId(id);
-        focusCluster(id, { isolate: false, distance: 28 });
-      } else if (hoverFocusId === id) {
-        setHoverFocusId(null);
-        clearFocus();
-      }
-    }, 120);
   };
 
   const handleActivate = (id) => {
     setHasInteracted(true);
-    // Only Root opens the overlay for now
-    if (id !== 'cluster-root') return;
+    if (id !== 'cluster-root') return; // Only Root opens overlay for now
     setActiveClusterId(id);
-    if (controlsRef.current) controlsRef.current.enabled = false; // freeze while overlay is open
+    if (controlsRef.current) controlsRef.current.enabled = false;
   };
 
   const { isTablet } = useScreenSize();
 
+  // Data lookups
   const rootCluster = useMemo(() => conceptAssets.find((c) => c.id === 'cluster-root'), []);
+  const abyssData   = useMemo(() => conceptAssets.find((c) => c.id === 'cluster-abyss'), []);
   const activeCluster = useMemo(
     () => conceptAssets.find((c) => c.id === activeClusterId),
     [activeClusterId]
   );
-  const abyssClusterData = useMemo(
-    () => conceptAssets.find((c) => c.id === 'cluster-abyss'),
-    []
-  );
 
   const preferHiRes = hasInteracted || !!activeCluster;
 
-  // Gate rendering until both chunks are ready, so they appear together
-  const reveal = chunksReady;
-
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <LoadingCover done={reveal} />
-
       <Canvas
         dpr={[1, Math.min(1.5, window.devicePixelRatio || 1)]}
         gl={{ antialias: !lite, powerPreference: lite ? 'low-power' : 'high-performance', alpha: false }}
         shadows={false}
         style={{ background: 'black' }}
       >
+        {/* Report loading progress for EVERYTHING inside the Canvas */}
+        <ProgressReporter onChange={({ progress }) => setLoadProgress(progress)} />
+
         <PerformanceMonitor onDecline={() => setLite(true)} />
         <AdaptiveDpr pixelated />
 
@@ -250,7 +237,8 @@ export default function ConceptScene() {
           target={[0, -3.0, 0]}
         />
 
-        {reveal && shouldShow('cluster-root') && rootCluster && (
+        {/* Clusters render inside Suspense with null fallbacks (no DOM in Canvas) */}
+        {shouldShow('cluster-root') && rootCluster && (
           <Suspense fallback={null}>
             <ConceptCluster
               id={rootCluster.id}
@@ -274,12 +262,12 @@ export default function ConceptScene() {
           </Suspense>
         )}
 
-        {reveal && shouldShow('cluster-abyss') && (
+        {shouldShow('cluster-abyss') && (
           <Suspense fallback={null}>
             <AbyssCluster
               controlsRef={controlsRef}
               id="cluster-abyss"
-              images={abyssClusterData?.images ?? []}
+              images={abyssData?.images ?? []}
               isActive={activeClusterId === 'cluster-abyss'}
               onActivate={handleActivate}
               onHoverChange={handleHoverChange}
@@ -293,7 +281,7 @@ export default function ConceptScene() {
         )}
       </Canvas>
 
-      {/* Overlay */}
+      {/* Overlay (kept Suspenseable, but no DOM inside Canvas) */}
       {activeCluster && (
         <Suspense fallback={null}>
           <ClusterOverlay
@@ -306,6 +294,13 @@ export default function ConceptScene() {
             }}
           />
         </Suspense>
+      )}
+
+      {/* Single global flicker ABOVE the Canvas until everything is ready */}
+      {maskVisible && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 20, pointerEvents: 'none' }}>
+          <PreloadMask />
+        </div>
       )}
     </div>
   );
