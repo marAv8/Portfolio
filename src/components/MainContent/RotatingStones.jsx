@@ -4,63 +4,51 @@ import { useFrame } from '@react-three/fiber';
 import ImageOverlay from './ImageOverlay';
 import Panel from './Panel';
 
-export default function RotatingStones({ images = [], center = [0, 1, 1.5], radius = 0.5 }) {
-  const groupRef = useRef();
+export default function RotatingStones({
+  images = [],
+  center = [0, 1, 1.5],
+  radius = 0.55,
+  speed = 0.35,
+  panelColor = '#EDE3CF',   // warm ring-only color
+  panelOpacity = 0.95,
+}) {
+  const groupRef = useRef(null);
 
-  // Continuous rotation like a carousel
-  useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.4; // adjust speed here
-    }
+  useFrame((_, dt) => {
+    if (groupRef.current) groupRef.current.rotation.y += dt * speed;
   });
 
-  const angleStep = (Math.PI * 2) / images.length;
+  if (!images.length) return null;
+
+  const step = (Math.PI * 2) / images.length;
 
   return (
     <group ref={groupRef} position={center}>
-      {/* 🔵 Blue glowing core with light */}
-      <pointLight
-        position={[0, 0, 0]}
-        intensity={5}
-        distance={4}
-        color="#00ffff"
-      />
-<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.55, 0]}>
-  <circleGeometry args={[radius + 0.15, 32]} />
-  <meshStandardMaterial
-    color="black"
-    transparent
-    opacity={0.1}
-    depthWrite={false}
-  />
-</mesh>
-
-
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.1, 32, 32]} />
-        <meshBasicMaterial 
-        color="#00ffff"
-         />
+      {/* subtle ground disk (cheap) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.55, 0]}>
+        <circleGeometry args={[radius + 0.18, 48]} />
+        <meshStandardMaterial color="#000" transparent opacity={0.1} depthWrite={false} />
       </mesh>
 
-      {/* 🌀 Rotating image stones */}
+      {/* stones */}
       {images.map((img, i) => {
-        const angle = i * angleStep;
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius;
-        const rotation = [0, angle, 0];
+        const a = i * step;
+        const x = Math.sin(a) * radius;
+        const z = Math.cos(a) * radius;
+
+        // Face OUTWARD: use the angle itself
+        const rotationY = a;
 
         return (
-          <group key={i} position={[x, 0, z]} rotation={rotation}>
+          <group key={i} position={[x, 0, z]} rotation={[0, rotationY, 0]}>
             <group scale={img.scale || [1, 1, 1]}>
-              {img.useCircle ? (
-                <mesh position={[0, 0, 0.001]} rotation={[Math.PI / 2, 0, 0]}>
-                  <cylinderGeometry args={[0.6, 0.6, 0.01, 64]} />
-                  <meshBasicMaterial color="#fcfcfc" />
-                </mesh>
-              ) : (
-                <Panel thickness={0.1} />
-              )}
+              <Panel
+                thickness={0.08}
+                color={panelColor}
+                opacity={panelOpacity}
+                roughness={0.7}
+                metalness={0.05}
+              />
               <ImageOverlay url={img.url} />
             </group>
           </group>

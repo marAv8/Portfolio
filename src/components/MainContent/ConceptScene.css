@@ -21,3 +21,9 @@
   background-color: rgba(0, 0, 0, 0.94);
   z-index: 999;
 }
+/* allow vertical panning on the actual canvas element on phones */
+.r3f-mobile-scroll {
+  touch-action: pan-y !important;
+  -ms-touch-action: pan-y !important; /* legacy */
+}
+/* tablet band: keep a fixed stage width, center it */

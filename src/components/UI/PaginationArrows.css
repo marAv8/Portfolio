@@ -1,0 +1,48 @@
+/* Desktop-only arrow bar that sits just under the media */
+.media-pane .pagination-arrows.in-pane{
+  position: absolute;            /* anchor to .media-pane */
+  left: 50%;                     /* center in that column */
+  transform: translateX(-50%);   /* exact centering */
+  right: auto;
+  bottom: clamp(12px, 2.2vh, 28px);
+  justify-content: center;       /* center the trio (← 5 / 24 →) */
+  gap: 12px;
+}
+.pagination-arrows{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 60px;                 /* tweak if you want it closer/farther */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  z-index: 10020;               /* above the overlay content */
+  pointer-events: auto;
+}
+
+.pagination-arrows .nav{
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.65);
+  background: rgba(255,255,255,.12);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform .18s ease, background .2s ease, opacity .2s ease;
+  backdrop-filter: blur(3px);
+}
+.pagination-arrows .nav:hover{ transform: translateY(-1px); background: rgba(255,255,255,.18); }
+
+.pagination-arrows .status{
+  color: #fff;
+  font-size: 14px;
+  letter-spacing: .4px;
+  opacity: .85;
+}
+
+/* hide on small screens — dots handle pagination there */
+@media (max-width: 900px){
+  .pagination-arrows{ display: none; }
+}

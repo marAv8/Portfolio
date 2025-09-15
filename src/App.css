@@ -1,54 +1,43 @@
-
 /* App.css */
-#root {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+
+/* 1) base: let the page grow on mobile, never clip the y-axis */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100svh;      /* mobile-safe viewport height */
+  background: #030303;
+  overflow-x: hidden;
 }
 
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+/* 2) desktop/tablet: clamp root to viewport to avoid double scrollbars */
+@media (min-width: 769px) {
+  #root {
+    height: 100vh;
+    overflow: hidden;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-@keyframes pulse {
-  0%   { transform: scale(1);   opacity: 1; }
-  50%  { transform: scale(1.5); opacity: 0.3; }
-  100% { transform: scale(1);   opacity: 1; }
-}
-/* Hide any nav/header on small screens ONLY while an overlay is open */
+/* 3) MOBILE: put everything in ONE media block */
 @media (max-width: 768px) {
+  /* Make the document the ONLY vertical scroller */
+  html, body, #root {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: visible !important;
+  }
+
+  /* The Concepts scene wrapper should NOT scroll on its own */
+  .scene-section {
+    overflow-y: visible !important; /* the page scrolls, not this wrapper */
+  }
+
+  /* Keep the R3F canvas from stealing vertical scroll gestures */
+  canvas {
+    touch-action: pan-y !important;
+  }
+
+  /* Hide any nav/header on small screens ONLY while an overlay is open */
   body.overlay-open header,
   body.overlay-open nav,
   body.overlay-open [role="navigation"],
@@ -59,3 +48,15 @@
     display: none !important;
   }
 }
+
+/* (keep the rest of your styles below) */
+.logo { height: 6em; padding: 1.5em; will-change: filter; transition: filter 300ms; }
+.logo:hover { filter: drop-shadow(0 0 2em #646cffaa); }
+.logo.react:hover { filter: drop-shadow(0 0 2em #61dafbaa); }
+@keyframes logo-spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo { animation: logo-spin infinite 20s linear; }
+}
+.card { padding: 2em; }
+.read-the-docs { color: #888; }
+@keyframes pulse { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:.3} 100%{transform:scale(1);opacity:1}}
