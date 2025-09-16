@@ -1,31 +1,16 @@
-// src/components/MainContent/AbyssCluster.jsx
+//AbyssCluster.jsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { a, useSpring } from '@react-spring/three';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useCursor } from '@react-three/drei';
-import { useAutoTiltToCamera, useOrbitFocus } from "../../hooks/useCameraHelpers"; // keep import
+import { useAutoTiltToCamera, useOrbitFocus } from "../../hooks/useCameraHelpers";
 import Panel from './Panel';
 import ImageOverlay from './ImageOverlay';
 import PanelVideoFace from './PanelVideoFace';
 import RadialFadeDisk from '../Effects/RadialFadeDisk';
 import RimCrownArc from '../Effects/RimCrownArc';
-
-
-
-function YawBillboard({ children, ...props }) {
-  const ref = React.useRef();
-  const tmp = React.useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ camera }) => {
-    if (!ref.current) return;
-    ref.current.getWorldPosition(tmp);
-    const dx = camera.position.x - tmp.x;
-    const dz = camera.position.z - tmp.z;
-    const yaw = Math.atan2(dx, dz);
-    ref.current.rotation.set(0, yaw, 0);
-  });
-  return <group ref={ref} {...props}>{children}</group>;
-}
+import { useScreenSize } from '../../contexts/ScreenSizeContext';
 
 export default function AbyssCluster({
   id = 'cluster-abyss',
@@ -42,20 +27,25 @@ export default function AbyssCluster({
   controlsRef,
   onReady,
 }) {
+  const { isMobile } = useScreenSize();
   const groupRef   = useRef(null);
   const visualsRef = useRef(null);
   const planeRef   = useRef(null);
   const baseRef    = useRef(null);
   const NO_RAYCAST = () => null;
 
-  // 🔕 turn OFF auto-tilt (root cause of the “fake” look)
   const AUTO_TILT = false;
   useAutoTiltToCamera(baseRef, { factor: 0.88, enabled: AUTO_TILT });
 
-  // ✅ keep focus helper (this was good)
-  const { startFocus /*, clearFocus */ } = useOrbitFocus(controlsRef, { defaultDistance: 28 });
+  const { startFocus } = useOrbitFocus(controlsRef, { defaultDistance: 28 });
 
-  // --- drag + hover (unchanged) ---
+  // add with other refs at top of component
+const scrollStartRef = useRef(0);
+const TAP_MOVE_PX = 6;     // movement guard
+const TAP_SCROLL_PX = 8;   // page scroll guard
+
+
+  // drag vars
   const ROT_Y = 0.005, ROT_X = 0.004, CLAMP_X = 0.6;
   const draggingRef = useRef(false);
   const movedRef = useRef(false);
@@ -99,32 +89,52 @@ export default function AbyssCluster({
     });
     return () => prev.forEach((raycast, obj) => { obj.raycast = raycast; });
   }, []);
+// Always re-enable orbit controls on pointer end/unmount.
+// (Hooks must be before the return)
+useEffect(() => {
+  // in case we arrive here after a previous drag, force enable on mount
+  setControlsEnabled(true);
 
-// billboard hit plane (bigger & still just in front of the cluster)
-const BASE_RADIUS = 12;                  // matches your big base disk
-const HIT_PAD     = 3.5;                 // extra margin beyond visuals
-const PLANE_W     = 2 * (BASE_RADIUS + HIT_PAD);  // ≈31
-const PLANE_H     = PLANE_W * 0.72;               // keep aspect friendly
-const PLANE_OFFSET = 1.25;               // slight push toward camera along view dir
+  // desktop/tablet: add global listeners so a lost pointerup still restores controls
+  if (!isMobile) {
+    const restore = () => setControlsEnabled(true);
+    window.addEventListener('pointerup', restore);
+    window.addEventListener('pointercancel', restore);
+    return () => {
+      window.removeEventListener('pointerup', restore);
+      window.removeEventListener('pointercancel', restore);
+      setControlsEnabled(true); // also enable on unmount
+    };
+  }
 
-const tmpWorld = useMemo(() => new THREE.Vector3(), []);
-const tmpDir   = useMemo(() => new THREE.Vector3(), []);
-const tmpPos   = useMemo(() => new THREE.Vector3(), []);
-useFrame(({ camera }) => {
-  const g = groupRef.current, p = planeRef.current;
-  if (!g || !p) return;
-  g.updateWorldMatrix(true, false);
-  tmpWorld.setFromMatrixPosition(g.matrixWorld);
-  tmpDir.copy(camera.position).sub(tmpWorld).normalize();
-  const planeWorldPos = tmpPos.copy(tmpWorld).addScaledVector(tmpDir, PLANE_OFFSET);
-  const localPlanePos = g.worldToLocal(planeWorldPos.clone());
-  p.position.copy(localPlanePos);
-  const localCamPos = g.worldToLocal(camera.position.clone());
-  p.lookAt(localCamPos);
-});
+  // mobile: we never disable controls; just ensure enabled on mount/unmount
+  return () => setControlsEnabled(true);
+}, [isMobile, setControlsEnabled]);
 
+  // billboard plane always faces camera & sits slightly forward
+  const BASE_RADIUS = 12;
+  const HIT_PAD     = 3.5;
+  const PLANE_W     = 2 * (BASE_RADIUS + HIT_PAD);
+  const PLANE_H     = PLANE_W * 0.72;
+  const PLANE_OFFSET = 1.25;
 
-  // ---------- layout ----------
+  const tmpWorld = useMemo(() => new THREE.Vector3(), []);
+  const tmpDir   = useMemo(() => new THREE.Vector3(), []);
+  const tmpPos   = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ camera }) => {
+    const g = groupRef.current, p = planeRef.current;
+    if (!g || !p) return;
+    g.updateWorldMatrix(true, false);
+    tmpWorld.setFromMatrixPosition(g.matrixWorld);
+    tmpDir.copy(camera.position).sub(tmpWorld).normalize();
+    const planeWorldPos = tmpPos.copy(tmpWorld).addScaledVector(tmpDir, PLANE_OFFSET);
+    const localPlanePos = g.worldToLocal(planeWorldPos.clone());
+    p.position.copy(localPlanePos);
+    const localCamPos = g.worldToLocal(camera.position.clone());
+    p.lookAt(localCamPos);
+  });
+
+  // layout
   const DISK_RADIUS = 9.0;
   const PANEL_Y     = 0.55;
 
@@ -210,86 +220,123 @@ useFrame(({ camera }) => {
     const url = item?.url ?? '';
     const isVideo = item.type === 'video' || url.toLowerCase().endsWith('.mp4');
     const [w, h] = Array.isArray(item.size) ? item.size : [1, 1];
-    if (isVideo) {
-      // ⬇️ no more stretching
-      return <PanelVideoFace url={url} width={w} height={h} fit="contain" />;
-    }
+    if (isVideo) return <PanelVideoFace url={url} width={w} height={h} fit="contain" />;
     return <ImageOverlay url={url} />;
   };
 
   return (
-    
     <a.group ref={groupRef} position={position} rotation={rotation} scale={s}>
       {debugAxes && <axesHelper args={[1.25]} />}
 
       {/* Interactive billboard plane */}
-      {!isActive && (
-        <mesh
-          ref={planeRef}
-          scale={[PLANE_W, PLANE_H, 1]}
-          frustumCulled={false}
-          renderOrder={9999}
-          onPointerOver={(e) => { e.stopPropagation(); if (!hovered) { setHovered(true); onHoverChange?.(id, true); } document.body.style.cursor = 'pointer'; }}
-          onPointerOut={(e) => { e.stopPropagation(); if (hovered) { setHovered(false); onHoverChange?.(id, false); } document.body.style.cursor = 'default'; }}
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            draggingRef.current = true;
-            movedRef.current = false;
-            startRef.current = [e.clientX, e.clientY];
-            lastRef.current  = [e.clientX, e.clientY];
-            setControlsEnabled(false);
-            document.body.style.cursor = 'grabbing';
-          }}
-          onPointerMove={(e) => {
-            e.stopPropagation();
-            if (!draggingRef.current || !groupRef.current) return;
-            const [lx, ly] = lastRef.current;
-            const dx = e.clientX - lx;
-            const dy = e.clientY - ly;
-            if (Math.abs(dx) + Math.abs(dy) > 2) movedRef.current = true;
-            groupRef.current.rotation.y += dx * ROT_Y;
-            const nextX = groupRef.current.rotation.x + dy * ROT_X;
-            groupRef.current.rotation.x = Math.max(-CLAMP_X, Math.min(CLAMP_X, nextX));
-            lastRef.current = [e.clientX, e.clientY];
-          }}
-          onPointerUp={(e) => {
-            e.stopPropagation();
-            draggingRef.current = false;
-            setControlsEnabled(true);
-            document.body.style.cursor = 'pointer';
-            const [sx, sy] = startRef.current;
-            const dx = Math.abs(e.clientX - sx);
-            const dy = Math.abs(e.clientY - sy);
-            if (!movedRef.current && dx <= 4 && dy <= 4) {
-              let target = new THREE.Vector3();
-              if (groupRef.current) {
-                groupRef.current.updateWorldMatrix(true, false);
-                target.setFromMatrixPosition(groupRef.current.matrixWorld);
-                target.y += 0.5;
-              } else {
-                target.set(position?.[0] ?? 0, (position?.[1] ?? 0) + 0.5, position?.[2] ?? 0);
-              }
-              startFocus({ target, distance: 28, pitchDeg: 56 });
-              onActivate(id);
-            }
-          }}
-          onPointerLeave={(e) => {
-            e.stopPropagation();
-            if (draggingRef.current) {
-              draggingRef.current = false;
-              setControlsEnabled(true);
-              document.body.style.cursor = 'default';
-            }
-          }}
-        >
-          <planeGeometry args={[1, 1]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} side={2} />
-        </mesh>
-      )}
+{!isActive && (
+  <mesh
+    ref={planeRef}
+    scale={[PLANE_W, PLANE_H, 1]}
+    frustumCulled={false}
+    renderOrder={9999}
+    onPointerOver={(e) => {
+      e.stopPropagation();
+      if (!hovered) { setHovered(true); onHoverChange?.(id, true); }
+      document.body.style.cursor = 'pointer';
+      try { console.log('[DIAG][AbyssPlane]', id, 'over'); } catch {}
+    }}
+    onPointerOut={(e) => {
+      e.stopPropagation();
+      if (hovered) { setHovered(false); onHoverChange?.(id, false); }
+      document.body.style.cursor = 'default';
+    }}
+    onPointerDown={(e) => {
+      e.stopPropagation();
+      movedRef.current = false;
+      startRef.current = [e.clientX, e.clientY];
+      lastRef.current  = [e.clientX, e.clientY];
 
-      {/* VISUALS (no raycast) */}
-      <group ref={visualsRef} raycast={NO_RAYCAST}>
-        {/* Base disk (static again) */}
+      // record page scroll to detect real scroll vs tap (mobile)
+      const se = document.scrollingElement || document.documentElement;
+      scrollStartRef.current = (se?.scrollTop ?? window.scrollY ?? 0);
+
+      if (!isMobile) {
+        draggingRef.current = true;
+        setControlsEnabled(false);
+      }
+      document.body.style.cursor = 'grabbing';
+    }}
+    onPointerMove={(e) => {
+      e.stopPropagation();
+      if (isMobile || !draggingRef.current || !groupRef.current) return;
+
+      const [lx, ly] = lastRef.current;
+      const dx = e.clientX - lx;
+      const dy = e.clientY - ly;
+      if (Math.abs(dx) + Math.abs(dy) > 2) movedRef.current = true;
+
+      try { console.log('[DIAG][AbyssPlane]', id, 'move', { dx, dy, moved: movedRef.current }); } catch {}
+
+      groupRef.current.rotation.y += dx * ROT_Y;
+      const nextX = groupRef.current.rotation.x + dy * ROT_X;
+      groupRef.current.rotation.x = Math.max(-CLAMP_X, Math.min(CLAMP_X, nextX));
+
+      lastRef.current = [e.clientX, e.clientY];
+    }}
+    onPointerUp={(e) => {
+      e.stopPropagation();
+
+      if (!isMobile) {
+        draggingRef.current = false;
+        setControlsEnabled(true);
+
+        const [sx, sy] = startRef.current;
+        const dx = Math.abs(e.clientX - sx);
+        const dy = Math.abs(e.clientY - sy);
+        try { console.log('[DIAG][AbyssPlane]', id, 'up', { dx, dy, moved: movedRef.current }); } catch {}
+
+        // desktop/tablet: activate only on true click
+        if (!movedRef.current && dx <= 4 && dy <= 4) onActivate(id);
+      }
+
+      document.body.style.cursor = 'pointer';
+    }}
+    onPointerLeave={(e) => {
+      e.stopPropagation();
+      if (!isMobile && draggingRef.current) {
+        draggingRef.current = false;
+        setControlsEnabled(true);
+        document.body.style.cursor = 'default';
+      }
+    }}
+    onClick={(e) => {
+      // mobile-only: activate on tap (no drag, no page scroll)
+      if (!isMobile) return;
+      e.stopPropagation();
+      try { console.log('[DIAG][AbyssPlane]', id, 'click-mobile'); } catch {}
+
+      const [sx, sy] = startRef.current;
+      const dx = Math.abs((e.clientX ?? 0) - sx);
+      const dy = Math.abs((e.clientY ?? 0) - sy);
+      if (dx > TAP_MOVE_PX || dy > TAP_MOVE_PX) return;
+
+      const se = document.scrollingElement || document.documentElement;
+      const now = (se?.scrollTop ?? window.scrollY ?? 0);
+      const dScroll = Math.abs(now - scrollStartRef.current);
+      if (dScroll > TAP_SCROLL_PX) return;
+
+      onActivate(id);
+    }}
+  >
+    <planeGeometry args={[1, 1]} />
+    <meshBasicMaterial
+      transparent
+      opacity={0}
+      depthWrite={false}
+      depthTest={false}
+      side={THREE.DoubleSide}
+    />
+  </mesh>
+)}
+
+      {/* VISUALS */}
+      <group ref={visualsRef} raycast={() => null}>
         <group ref={baseRef}>
           <RadialFadeDisk
             raycast={NO_RAYCAST}
@@ -301,50 +348,46 @@ useFrame(({ camera }) => {
             position={[0, 0, 0]}
             opacity={1}
           />
-
-{/* ∩ crown of small disks running along the rim, via the back (behind the hero) */}
-<RimCrownArc
-  baseRadius={12}
-  inset={0.9}
-  samples={13}
-  thetaStartDeg={135}
-  thetaEndDeg={45}
-  yEdge={0.10}
-  amp={3.6}
-  curve={1.45}
-  radEdge={1.25}
-  radCenter={0.80}
-  heightEdge={0.34}
-  heightCenter={0.22}
-  opacityEdge={0.85}
-  opacityCenter={0.55}
-  pushBack={-0.15}
-  // NEW (optional fine-tune)
-  edgeSelfInsetMul={0.65}
-  edgeInset={0.22}
-  edgeLift={0.08}
-  glowStrength={1.25}          // overall gain
-  glowRadiusMul={1.45}         // a touch larger halo
-  glowOpacityEdge={0.65}
-/>
+          <RimCrownArc
+            baseRadius={12}
+            inset={0.9}
+            samples={13}
+            thetaStartDeg={135}
+            thetaEndDeg={45}
+            yEdge={0.10}
+            amp={3.6}
+            curve={1.45}
+            radEdge={1.25}
+            radCenter={0.80}
+            heightEdge={0.34}
+            heightCenter={0.22}
+            opacityEdge={0.85}
+            opacityCenter={0.55}
+            pushBack={-0.15}
+            edgeSelfInsetMul={0.65}
+            edgeInset={0.22}
+            edgeLift={0.08}
+            glowStrength={1.25}
+            glowRadiusMul={1.45}
+            glowOpacityEdge={0.65}
+          />
         </group>
 
         {/* HERO */}
-        <YawBillboard position={heroPosition} scale={heroScale}>
+        <group position={heroPosition} scale={heroScale}>
           <Panel thickness={0.05} />
           <PanelVideoFace url={hero.url} width={1} height={1} fit="contain" />
-        </YawBillboard>
+        </group>
 
+        {/* GRID / RING ITEMS */}
         {laidOut.map((item, i) => {
           const [w, h] = Array.isArray(item.size) ? item.size : [1, 1];
           const panelScale = item.size ? [w, h, 1] : (item.scale ?? [1, 1, 1]);
           return (
-            <YawBillboard key={i} position={item.position}>
-              <group scale={panelScale}>
-                <Panel thickness={0.05} />
-                {renderPanelContent(item)}
-              </group>
-            </YawBillboard>
+            <group key={i} position={item.position} scale={panelScale}>
+              <Panel thickness={0.05} />
+              {renderPanelContent(item)}
+            </group>
           );
         })}
       </group>

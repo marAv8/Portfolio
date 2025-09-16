@@ -8,17 +8,23 @@ body,
 #root {
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100svh;         /* mobile-safe viewport */
   background-color: #030303;
   font-family: 'Roboto', sans-serif;
   font-weight: 100;
   box-sizing: border-box;
-  overflow: auto;
-  overflow-x: hidden; 
-    color: #ffffff;
+  color: #ffffff;
+  overflow-x: hidden;          /* never horizontal scroll */
+  /* no forced overflow-y on mobile — let the PAGE scroll */
 }
-
+/* On desktop/tablet keep the root from creating double scrollbars */
+@media (min-width: 769px) {
+  #root {
+    height: 100vh;
+    overflow: hidden;
+  }
+}
 /* 2) Ensure every element (and pseudo-element) inherits “Alumni Sans Pinstripe” */
 *,
 *::before,

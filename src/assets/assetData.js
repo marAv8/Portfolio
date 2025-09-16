@@ -1,5 +1,6 @@
 // src/assets/assetData.js
 import { abyssAssets } from './assetsLeft';
+import { earlyAliensAssets } from './assetsLeft';
 // Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
 const toVariantUrls = (url) => {
   if (typeof url !== 'string') return { thumb: url, full: url };
@@ -199,9 +200,21 @@ export const conceptAssets = [
     id: 'cluster-abyss',
     flickerColor: '#d32f2f',
     label: 'Abyss',
+    title: 'Abyss',
+    year: '2023',
+    subtitle: 'Study in red light, mirrored forms, and ritual geometry.',
     position: [-3, -1, -2],
     scale: [1, 1, 1],
     images: abyssAssets,  // ✅ good
   },
-  
+
+{
+  id: 'cluster-early-aliens',
+  label: 'Protoforms',
+  title: 'Protoforms',
+  subtitle: 'MJ v3 portrait artifacts, 12-panel ring',
+  year: '2022–2023',
+  scale: [1,1,1],
+  assets: earlyAliensAssets,   // ✅ keep as "assets"
+}
 ];

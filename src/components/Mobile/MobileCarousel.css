@@ -1,0 +1,150 @@
+/* ==== Safe-area + sizing vars ==== */
+:root {
+  --safe-top: env(safe-area-inset-top, 10px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --topbar: 56px;
+  --dots: 80px;
+  --nav-h: 100px;
+  --first-canvas-top-pad: 44px;
+}
+
+/* ==== MOBILE WRAP ==== */
+.m-wrap {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9;
+}
+
+.m-wrap.is-loading .m-list {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.m-list {
+  height: 100svh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(var(--safe-top) + var(--nav-h) + 24px) 0 16px;
+}
+@supports not (height: 100svh) { .m-list { height: 100vh; } }
+
+/* ==== ONE STAGE (3D + inline carousel) ==== */
+.m-stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 18px;
+}
+
+/* 3D preview canvas panel */
+.m-stage-canvas {
+  position: relative;
+  width: 96vw;
+  max-width: 980px;
+  height: 66svh;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+@supports not (height: 66svh) { .m-stage-canvas { height: 66vh; } }
+
+/* First panel gets internal headroom (keeps cluster away from nav) */
+.m-stage:first-child .m-stage-canvas {
+  height: calc(66svh + var(--first-canvas-top-pad));
+  padding-top: var(--first-canvas-top-pad);
+  box-shadow: none;
+}
+@supports not (height: 66svh) {
+  .m-stage:first-child .m-stage-canvas { height: calc(66vh + var(--first-canvas-top-pad)); }
+}
+
+/* Ensure the WebGL <canvas> fills the content box cleanly */
+.m-stage-canvas > canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ========= FULLSCREEN OVERLAY (unchanged) ========= */
+.mc-root {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column;
+  background: rgba(0,0,0,.96);
+}
+.mc-top {
+  display:flex; align-items:flex-start; gap:8px;
+  padding: calc(10px + var(--safe-top)) 14px 8px 14px;
+  background: linear-gradient(#000, rgba(0,0,0,.45));
+}
+.mc-title { color:#fff; flex:1; min-width:0; }
+.mc-title-line { font-size:22px; font-weight:500; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mc-subline { margin-top:4px; font-size:13px; color:#dcdcdc; opacity:.9; }
+.mc-close { font-size:28px; line-height:1; color:#fff; background:transparent; border:0; padding:6px 8px; cursor:pointer; }
+.mc-media { position:relative; flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
+.mc-img {
+  max-width: 100%;
+  max-height: calc(100svh - var(--topbar) - var(--dots) - var(--safe-bottom));
+  object-fit: contain;
+}
+@supports not (height: 100svh) { .mc-img { max-height: calc(100vh - var(--topbar) - var(--dots) - var(--safe-bottom)); } }
+.mc-empty { color:#aaa; }
+.mc-zone { position:absolute; top:0; bottom:0; width:24%; background:transparent; border:0; padding:0; }
+.mc-left{ left:0; } .mc-right{ right:0; }
+
+/* ========= INLINE CAROUSEL ========= */
+.mi-block{
+  width: 96vw;
+  max-width: 980px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mi-meta{
+  width: 100%;
+  color: #eaeaea;
+  text-align: center;
+  margin-bottom: 12px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.mi-title{ font-size: 26px; font-weight: 300; letter-spacing: .2px; }
+.mi-line{  margin-top: 4px; font-size: 16px; font-weight: 300; opacity: .95; }
+
+.mi-viewport{
+  width: 100%;
+  height: 46svh;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset;
+  touch-action: pan-x;              /* horizontal swipes only */
+  overscroll-behavior: contain;     /* stop scroll chaining while swiping */
+}
+@supports not (height: 46svh) { .mi-viewport{ height: 46vh; } }
+
+.mi-media{ max-width: 100%; max-height: 100%; object-fit: contain; }
+.mi-empty{ color:#aaa; }
+
+.mi-dots{
+  width: 100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding: 12px 0 14px;
+}
+
+/* optional tiny nudge below the nav */
+.m-stage:first-child { margin-top: 6px; }
+
+/* belt & suspenders: ensure no mask is ever applied to first canvas */
+.m-stage:first-child .m-stage-canvas > canvas {
+  -webkit-mask-image: none;
+  mask-image: none;
+}

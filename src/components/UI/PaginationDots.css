@@ -1,43 +1,60 @@
-/* src/components/UI/PaginationDots.css */
-
+/* Pagination container */
 .pagination-dots-container {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 10px !important;
-    z-index: 9999 !important;
-    pointer-events: auto;
-  }
-  
-  .pagination-dots-container.mobile {
-    position: fixed !important;
-    bottom: 20px !important;
-    left: 0 !important;
-    right: 0 !important;
-    background: transparent;
-  }
-  
-  .pagination-dots-container.desktop {
-    position: absolute !important;
-    bottom: 20px !important;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  
-  .pagination-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(3px);
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
-  }
-  
-  .pagination-dot.active {
-    background: white;
-    box-shadow: 0 0 8px 3px rgba(255, 255, 255, 0.6);
-  }
-  
+  position: static !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: clamp(16px, 2.5vh, 28px); /* 🔥 adds a bit more space under the image */
+}
+
+/* Make sure the viewport doesn’t squash dots */
+.dots-viewport {
+  display: flex;
+  gap: 10px;
+  padding: 0 12px;
+  align-items: center;
+}
+
+/* Fades are fine but keep them separate from dot shape */
+.dots-fade {
+  width: 22px;
+  height: 16px;
+  pointer-events: none;
+  border-radius: 999px;
+  opacity: .25;
+}
+.dots-fade.left {
+  background: linear-gradient(to right, rgba(255,255,255,.22), rgba(255,255,255,0));
+  filter: blur(2px);
+}
+.dots-fade.right {
+  background: linear-gradient(to left, rgba(255,255,255,.22), rgba(255,255,255,0));
+  filter: blur(2px);
+}
+
+/* The dots themselves */
+.pagination-dot {
+  width: 8px;               /* bump size up slightly */
+  height: 8px;
+  border-radius: 50%;       /* 🔒 ensures circles */
+  border: 1px solid rgba(255,255,255,.55);
+  background: rgba(255,255,255,.28);
+  box-shadow: 0 0 4px rgba(255,255,255,.2);
+  transition: transform .25s ease, opacity .25s ease, box-shadow .25s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  line-height: 0;
+  display: inline-block;
+  flex-shrink: 0; 
+    /* NEW: lock box model and neutralize UA styles fully */
+  box-sizing: border-box;          /* NEW */
+  padding: 0;                      /* NEW */
+  margin: 0;                       /* NEW */
+  font-size: 0;                    /* NEW */
+}
+
+.pagination-dot.active {
+  background: #fff;
+  box-shadow: 0 0 8px 3px rgba(255,255,255,.55);
+}

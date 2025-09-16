@@ -1,18 +1,61 @@
 // src/components/Overlays/RootOverlay.jsx
+import * as THREE from 'three';
 import React, { useEffect } from 'react';
 import ClusterCarousel from "../MainContent/ClusterCarousel";
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
 import ClusterView from "../MainContent/ClusterView";
+import ConceptCluster from '../MainContent/ConceptCluster';
 import MetaInfo from "../UI/MetaInfo";
+import PaginationArrows from "../UI/PaginationArrows";
 
 export default function RootOverlay({ cluster, onClose }) {
   const { isMobile, isTablet } = useScreenSize();
+    // Normalize URLs once for consistent length/total
+    const deg = (d) => THREE.MathUtils.degToRad(d);
+  const urls = React.useMemo(() => {
+    const arr = cluster?.images ?? [];
+    return arr
+      .map((it) => (typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null))
+      .filter(Boolean);
+  }, [cluster]);
 
-    // hide global nav on mobile while overlay is open
-    useEffect(() => {
-      document.body.classList.add('overlay-open');
-      return () => document.body.classList.remove('overlay-open');
-    }, []);
+  // Shared index + wrap for desktop/tablet
+  const [index, setIndex] = React.useState(0);
+  const wrap = React.useCallback(
+    (i) => {
+      const len = urls.length || 1;
+      return ((i % len) + len) % len;
+    },
+    [urls.length]
+  );
+  // DIAG
+  const diagRef = React.useRef(null);
+  React.useEffect(() => { /** [DIAG4] */
+    try {
+      const html = document.documentElement; const body = document.body; /** [DIAG4] */
+      const dump = (el, name) => el && console.log('[DIAG4][overlay-css][Root mount]', name, getComputedStyle(el).cssText); /** [DIAG4] */
+      dump(html, 'html'); dump(body, 'body'); /** [DIAG4] */
+    } catch {}
+  }, []); /** [DIAG4] */
+
+  // 🔒 Freeze page scroll while overlay is open; restore on close
+  useEffect(() => {
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.classList.add('overlay-open');
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${y}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.classList.remove('overlay-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, y);
+    };
+  }, []);
+
   // Dynamic scale per device (for left-side ClusterView)
   const clusterScale = isMobile
     ? [1.1, 1.1, 1.1]
@@ -24,6 +67,7 @@ export default function RootOverlay({ cluster, onClose }) {
   if (isMobile) {
     return (
       <div
+        ref={diagRef}
         style={{
           position: 'absolute',
           top: 0,
@@ -32,9 +76,18 @@ export default function RootOverlay({ cluster, onClose }) {
           height: '100vh',
           backgroundColor: 'black',
           zIndex: 100,
-          overflowY: 'auto',
+          overflowY: 'hidden',
         }}
       >
+        {(() => { React.useEffect(() => { /** [DIAG4] */
+          try {
+            if (diagRef.current) console.log('[DIAG4][overlay-css][Root mobile]', getComputedStyle(diagRef.current).cssText);
+            const el = diagRef.current; const se = document.scrollingElement; /** [DIAG4] */
+            const onScroll = () => console.log('[DIAG4][overlay-scroll][Root mobile]', { self: el?.scrollTop, se: se?.scrollTop }); /** [DIAG4] */
+            el?.addEventListener('scroll', onScroll, { passive: true }); se?.addEventListener('scroll', onScroll, { passive: true }); /** [DIAG4] */
+            return () => { console.log('[DIAG4][overlay-unmount][Root mobile]'); el?.removeEventListener('scroll', onScroll); se?.removeEventListener('scroll', onScroll); }; /** [DIAG4] */
+          } catch {}
+        }, []); return null; })()}
         {/* Meta above the carousel on mobile */}
         <div style={{ position: 'relative', 
         padding: '0.75rem 1rem 0 1rem', 
@@ -58,6 +111,7 @@ export default function RootOverlay({ cluster, onClose }) {
   // DESKTOP/TABLET SPLIT VIEW
   return (
     <div
+      ref={diagRef}
       style={{
         position: 'absolute',
         top: 0,
@@ -70,12 +124,48 @@ export default function RootOverlay({ cluster, onClose }) {
         overflow: 'hidden',
       }}
     >
-      {/* Left: ClusterView owns MetaInfo + Canvas + PreloadMask */}
-      <ClusterView cluster={cluster} scale={clusterScale} />
+      {(() => { React.useEffect(() => { /** [DIAG4] */
+        try {
+          if (diagRef.current) console.log('[DIAG4][overlay-css][Root desktop]', getComputedStyle(diagRef.current).cssText);
+          const el = diagRef.current; const se = document.scrollingElement; /** [DIAG4] */
+          const onScroll = () => console.log('[DIAG4][overlay-scroll][Root desktop]', { self: el?.scrollTop, se: se?.scrollTop }); /** [DIAG4] */
+          el?.addEventListener('scroll', onScroll, { passive: true }); se?.addEventListener('scroll', onScroll, { passive: true }); /** [DIAG4] */
+          return () => { console.log('[DIAG4][overlay-unmount][Root desktop]'); el?.removeEventListener('scroll', onScroll); se?.removeEventListener('scroll', onScroll); }; /** [DIAG4] */
+        } catch {}
+      }, []); return null; })()}
+     {/* Left: match Abyss/Early — explicit camera + render3D with position */}
+        <ClusterView
+          cluster={cluster}
+          scale={clusterScale}
+          metaThemeClass="meta-theme-warm"
+          maskVariant="root"
+          camera={{ fov: 58, position: [0, 4, 25] }}
+          render3D={({ cluster, scale }) => (
+            <ConceptCluster
+              id={cluster?.id || 'cluster-root'}
+              images={cluster?.images || []}
+              layout={cluster?.layout}
+              title={cluster?.title}
+              subtitle={cluster?.subtitle}
+              year={cluster?.year}
+              isActive={true}                 // disable hit areas inside overlay
+              preferHiRes={true}
+              position={[0, -3, 0]}         // <<< explicit position (like Abyss/Early)
+              rotation={[deg(0), deg(0), 0]}
+              scale={
+                Array.isArray(scale)
+                  ? [scale[0], scale[0], scale[0]]
+                  : [scale, scale, scale]
+              }
+            />
+          )}
+        />
 
       {/* Right: Carousel */}
       <div
+        className="media-pane"
         style={{
+          position: 'relative',
           flex: '0 0 50vw',
           height: '100%',
           backgroundColor: '#000000',
@@ -85,7 +175,23 @@ export default function RootOverlay({ cluster, onClose }) {
           zIndex: 101,
         }}
       >
-        <ClusterCarousel images={cluster.images} onClose={onClose} />
+                {/* Controlled on desktop/tablet so arrows & drag stay in sync */}
+        <ClusterCarousel
+          images={cluster.images}
+          index={wrap(index)}
+          onIndexChange={setIndex}
+          onClose={onClose}
+        />
+
+        {/* Desktop arrows (looping) */}
+        <PaginationArrows
+          className="in-pane"
+          index={wrap(index)}
+          total={urls.length}
+          onPrev={() => setIndex((i) => wrap(i - 1))}
+          onNext={() => setIndex((i) => wrap(i + 1))}
+          loop
+        />
       </div>
     </div>
   );
