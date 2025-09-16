@@ -21,6 +21,7 @@ export default function ConceptCluster({
   images = [],
   isActive = false,
   onActivate = () => {},
+  onReady,
   onShowCarousel = () => {},
   onHoverChange = () => {},
   registerRef,
@@ -60,6 +61,15 @@ const TAP_SCROLL_PX = 8;   // page scroll guard
     if (typeof registerRef === 'function') registerRef(id, groupRef.current);
     return () => { if (typeof registerRef === 'function') registerRef(id, null); };
   }, [id, registerRef]);
+
+  // signal ready once mounted (after suspense resolves)
+  const readyOnceRef = useRef(false);
+  useEffect(() => {
+    if (!readyOnceRef.current) {
+      readyOnceRef.current = true;
+      if (typeof onReady === 'function') onReady(id);
+    }
+  }, [onReady, id]);
 
   // spring scale
   const [{ s }, api] = useSpring(() => ({ s: scale, config: { tension: 170, friction: 18 } }));

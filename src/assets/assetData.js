@@ -154,6 +154,7 @@ const enrichClusterImages = (images = []) =>
 export const conceptAssets = [
   {
     id: 'cluster-root',
+    flickerColor: '#fff2cc',
     layout: 'default',
     position: [0, 0, 0],
     title: 'Root Sketches',
@@ -197,6 +198,7 @@ export const conceptAssets = [
   },
   {
     id: 'cluster-abyss',
+    flickerColor: '#d32f2f',
     label: 'Abyss',
     title: 'Abyss',
     year: '2023',
