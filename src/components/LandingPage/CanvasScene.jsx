@@ -70,7 +70,6 @@ export default function CanvasScene({ modalOpen = false }) {
             <OrbitControls target={[0, 0, 0]} />
             <hemisphereLight skyColor={0xffffff} groundColor={0x444444} intensity={0.6} />
             <directionalLight intensity={1.2} position={[0, 0, 1000]} />
-            <Environment preset="night" background={false} />
             <SceneOverlay visible={modalOpen} />
 
             <Suspense fallback={null}>
@@ -87,7 +86,7 @@ export default function CanvasScene({ modalOpen = false }) {
                     size={a.size}
                     position={a.position}
                     rotation={a.rotation || [0, 0, 0]}
-                    speed={12}
+                    speed={20}
                   />
                 ))}
               </group>

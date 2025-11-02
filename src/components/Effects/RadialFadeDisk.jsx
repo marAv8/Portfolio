@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { ShaderMaterial } from 'three';
 import { extend } from '@react-three/fiber';
@@ -40,11 +41,12 @@ class RadialFadeMaterial extends ShaderMaterial {
 extend({ RadialFadeMaterial });
 
 export default function RadialFadeDisk({
+  colorHex = "#E7DBF1",
   radius = 3,
   height = 0.05,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
-  color = [1.0, 0.96, 0.82], //changes overhead Radial color
+  color = [1.0, 0.96, 0.82], // changes overhead Radial color
   opacity = 1.0,
   power = 4.5,
   pulseAmp = 0.05,  //  (default = current behavior)
@@ -52,28 +54,38 @@ export default function RadialFadeDisk({
 }) {
   const ref = useRef();
 
+  const uniformColor = useMemo(() => {
+    if (Array.isArray(color)) return new THREE.Color(...color);
+    if (color instanceof THREE.Color) return color.clone();
+    if (typeof color === 'string') return new THREE.Color(color);
+    return new THREE.Color(colorHex);
+  }, [color, colorHex]);
+
   // Animate opacity pulse
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     if (ref.current) {
-      ref.current.uniforms.uOpacity.value = opacity + pulseAmp * Math.sin(t * (2 * Math.PI * pulseHz));    }
+      ref.current.uniforms.uOpacity.value = opacity + pulseAmp * Math.sin(t * (2 * Math.PI * pulseHz));
+    }
   });
 
   // Imperatively update color and power on change
   useEffect(() => {
     if (ref.current) {
-      ref.current.uniforms.uColor.value = color;
+      ref.current.uniforms.uColor.value.copy(uniformColor);
       ref.current.uniforms.uPower.value = power;
     }
-  }, [color, power]);
+  }, [uniformColor, power]);
 
   return (
     <mesh position={position} rotation={rotation}>
       <cylinderGeometry args={[radius, radius, height, 64]} />
-      <radialFadeMaterial   ref={ref}
-                            uColor={new THREE.Color(...color)}  // ✅ Convert prop array to THREE.Color
-                            uOpacity={opacity}
-                            uPower={power}/>
-                              </mesh>
-          );
+      <radialFadeMaterial
+        ref={ref}
+        uColor={uniformColor}
+        uOpacity={opacity}
+        uPower={power}
+      />
+    </mesh>
+  );
 }

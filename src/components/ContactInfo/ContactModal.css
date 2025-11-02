@@ -159,6 +159,8 @@
 
   .email-link-glow {
     font-size: 1rem;
+    /* disable glow on mobile */
+    text-shadow: none;
   }
 
   .location {

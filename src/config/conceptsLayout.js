@@ -1,19 +1,29 @@
 // src/config/conceptsLayout.js
-import * as THREE from 'three';
+import * as THREE from "three";
 const deg = (d) => THREE.MathUtils.degToRad(d);
 
-// ===========================
-// NEW: Composition constants
-// ===========================
+/**
+ * This file is now the single source of truth for:
+ * - Desktop / Tablet composition (big scene)
+ * - Mobile composition AND mobile preview-card directives
+ *
+ * For MOBILE we add, per-cluster:
+ *   preview: {
+ *     centerFromLayout: boolean,  // if true, we negate `position` so the preview looks centered
+ *     rotation: [x,y,z],          // rotation to apply in the preview card
+ *     scale: number,              // uniform scale inside preview card
+ *     biasY: number               // tiny vertical nudge inside the card (world units)
+ *   }
+ */
+
 export const COMPOSITION = {
-  GUTTER_VW: 0.06,         // 8% of viewport width per side
-  GUTTER_MIN_PX: 64,       // minimum 64px per side
+  GUTTER_VW: 0.06,
+  GUTTER_MIN_PX: 64,
   TARGET_BIAS_TO_ROOT: 1,
-  // Per-mode safe Z ranges (world units) so we don't zoom absurdly far
   CLAMPS: {
-   tablet:  { zMin: 44, zMax: 160 }, // ← allow pullback at 900–1100px
-    desktop: { zMin: 36, zMax: 90 },  // a touch more headroom
-  }
+    tablet:  { zMin: 44, zMax: 160 },
+    desktop: { zMin: 36, zMax: 90 },
+  },
 };
 
 export function getConceptLayout({ isMobile, isTablet }) {
@@ -22,39 +32,50 @@ export function getConceptLayout({ isMobile, isTablet }) {
   return DESKTOP;
 }
 
-
-// === Desktop (wide look) ===
+/* =========================
+   DESKTOP (wide composition)
+   ========================= */
 const DESKTOP = {
   camera: {
-      fov: 44,                 // wider number = zooms out a bit
-    position: [0, 4, 41],    // Z smaller = closer; Z larger = farther
-    target:   [0, -6, 0],
+    fov: 44,
+    position: [0, 4, 90],
+    target: [0, -6, 0],
   },
   clusters: {
-    root:  { position: [0, -6, 0], rotation: [deg(1), 0, 0],             scale: [2.5,2.5,2.5], frameWidth: 20 },
-    abyss: { position: [-50, -35, -28], rotation: [deg(-10), deg(12), 0],  baseScale: 1.5, frameWidth: 22  },
-    early: { position: [0, -28, -14], rotation: [0, 0, deg(0)],           baseScale: 6, frameWidth: 24 },
+    root:     { position: [  38,  6, -10],rotation: [deg(8), deg(-10), 0],  scale: [2.5, 2.5, 2.5], frameWidth: 20 },
+    penumbra: { position: [-38,   6, -20],rotation: [deg(5), deg(0), 0],  scale: [2.05,2.05,2.05], frameWidth: 18 },
+    lumen:    { position: [ 38, -18,  -10], scale: [2.0, 2.0, 2.0], frameWidth: 18 },
+    abyss:    { position: [-38, -28, -20],  baseScale: 1.2,        frameWidth: 22 },
+    hats:     { position: [   0,   6, -14], baseScale: 6,          frameWidth: 20 },
+    early:    { position: [  0, -22, -16],  baseScale: 6,          frameWidth: 24 },
   },
 };
 
-// === Tablet (same composition, a touch larger frame) ===
+/* ======================
+   TABLET (mid composition)
+   ====================== */
 const TABLET = {
   camera: {
     fov: 48,
-    position: [0, 5, 54],
-    target:   [0, -6, 0],
+    position: [0, 5, 68],
+    target: [0, -6, 0],
   },
   clusters: {
-    root:  { position: [0, -6, 0], rotation: [deg(1), 0, 0], scale: [3.5,3.5,3.5], frameWidth: 20 },
-    abyss: { position: [-38, -40, -28], rotation: [deg(-10), deg(12), 0], baseScale: 2, frameWidth: 24  },
-    early: { position: [0, -28, -20],  rotation: [0, 0, deg(0)],         baseScale: 6, frameWidth: 24 },
+    root:     { position: [  30,  4,   -14],rotation: [deg(8), deg(-10), 0],    scale: [1.7, 1.7, 1.7], frameWidth: 20 },
+    penumbra: { position: [-30,  4,  -16],rotation: [deg(5), deg(0), 0],     scale:[1.5,1.5, 1.5], frameWidth: 18 },
+    lumen:    { position: [ 30, -15, -10],     scale:[1.5, 1.5, 1.5], frameWidth: 18 },
+    abyss:    { position: [-30, -28, -20],     baseScale: 1,         frameWidth: 24 },
+    hats:     { position: [  0,  4, -14],      baseScale: 5.5,      frameWidth: 20 },
+    early:    { position: [  0, -20, -16],     baseScale: 6,         frameWidth: 24 },
   },
 };
 
-// === Mobile (scene geometry only; camera is driven by scroll in ConceptSceneMobile) ===
+/* ======================================================
+   MOBILE (small composition + PREVIEW directives per cluster)
+   ====================================================== */
 const MOBILE = {
   camera: {
-    // kept for reference; ConceptSceneMobile ignores this section
+    // kept for reference only; the mobile preview cards use their own camera
     fov: 64,
     z: 72,
     yOffset: 3,
@@ -63,8 +84,83 @@ const MOBILE = {
     maxPolar: deg(62),
   },
   clusters: {
-    root:  { position: [0, 5, 0],   rotation: [deg(3), 0, 0],  baseScale: 1.5,  scale: [2.2, 2.2, 2.2] },
-    abyss: { position: [0, -20, 0], rotation: [deg(-10), 0, 0], baseScale: 1.0 },
-    early: { position: [0, -60, 0], rotation: [0, 0, 0],        baseScale: 4.0 },
+    /* Root / Concept */
+    root: {
+      position: [0, 5, 0],
+      rotation: [deg(0), deg(-10), 0],
+      baseScale: 1,
+      // How the root should look in the PREVIEW card
+      preview: {
+        centerFromLayout: false,
+        rotation: [deg(10), 0, 0],
+        scale: 1,
+        biasY: -1,                       
+      },
+    },
+
+    /* Penumbra */
+    penumbra: {
+      position: [0, -18, 0],
+      rotation: [0, deg(2) , 0],
+      baseScale: 1.35,
+      preview: {
+        centerFromLayout: false,        
+        rotation: [deg(10), 0, 0],
+        scale: 0.72,
+        biasY: -0.1,
+      },
+    },
+
+    /* Lumen (added to mobile) */
+    lumen: {
+      position: [0, -20, 0],
+      rotation: [deg(2), 0, 0],
+      baseScale: 1.0,
+      preview: {
+        centerFromLayout: false,
+        rotation: [deg(5), 0, 0],
+        scale: 1.2,
+        biasY: 6,
+        cameraZ: 26,
+        translate: [0, -0.1, 0],
+      },
+    },
+
+    /* Abyss */
+    abyss: {
+      position: [0, -40, 0],
+      rotation: [deg(-5), 0, 0],
+      baseScale: 1.0,
+      preview: {
+        centerFromLayout: false,
+        rotation: [deg(8), 0, 0], 
+        scale: 0.65,
+        biasY: -0.05,
+        cameraZ: 26,
+      },
+    },
+    hats: {
+      position: [0, -60, 0],
+      rotation: [0, 0, 0],
+      baseScale: 4.8,
+      preview: {
+        centerFromLayout: false,
+        rotation: [deg(0), 0, 0],
+        scale: .7,
+        biasY: 1,
+      },
+    },
+    /* Early Aliens / Protoforms */
+    early: {
+      position: [0, -80, 0],
+      rotation: [0, 0, 0],
+      baseScale: 4.0,
+      preview: {
+        centerFromLayout: false,
+        rotation: [0, 0, 0],
+        scale: .8,
+        biasY: 1,
+      },
+    },
   },
 };

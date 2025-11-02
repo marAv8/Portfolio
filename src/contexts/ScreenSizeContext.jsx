@@ -8,7 +8,7 @@ export const ScreenSizeContext = React.createContext({ isMobile:false, isTablet:
  *  tablet:  901–1280
  *  desktop: 1280+
  */
-const MOBILE_MAX = 900;
+const MOBILE_MAX = 1100;
 const TABLET_MAX = 1280;
 
 

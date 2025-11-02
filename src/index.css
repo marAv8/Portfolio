@@ -2,34 +2,37 @@
    src/index.css
    ===================================================================== */
 
-/* 1) Use Alumni Sans Pinstripe as the single global font */
-html,
-body,
-#root {
+/* Tailwind v4 preferred import */
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* Global/base styles – keep them plain CSS to avoid @apply issues */
+html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
   min-height: 100svh;         /* mobile-safe viewport */
-  background-color: #030303;
-  font-family: 'Roboto', sans-serif;
-  font-weight: 100;
+  background-color: #030303;  /* your dark backdrop */
+  color: #e6e6e6;             /* matches theme.colors.aura */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+               Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji",
+               "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    font-weight: 300;          /* or 200 for an even lighter feel */
+  font-size: 13px;           /* optional: shrink the base size */
+  letter-spacing: 0.02em;             
   box-sizing: border-box;
-  color: #ffffff;
-  overflow-x: hidden;          /* never horizontal scroll */
-  /* no forced overflow-y on mobile — let the PAGE scroll */
+  overflow-x: hidden;
 }
-/* On desktop/tablet keep the root from creating double scrollbars */
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* Desktop/tablet: avoid double scrollbars */
 @media (min-width: 769px) {
   #root {
     height: 100vh;
     overflow: hidden;
   }
-}
-/* 2) Ensure every element (and pseudo-element) inherits “Alumni Sans Pinstripe” */
-*,
-*::before,
-*::after {
-  box-sizing: inherit;
-  font-family: inherit;
-  font-weight: inherit;
 }

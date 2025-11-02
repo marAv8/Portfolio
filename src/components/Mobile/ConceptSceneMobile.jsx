@@ -1,220 +1,332 @@
-//ConceptSceneMobile.jsx
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  Suspense,
-  useCallback,
-} from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { PerspectiveCamera, AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
+// latest/src/components/Mobile/ConceptSceneMobile.jsx
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { PerspectiveCamera } from "@react-three/drei";
 
 import "./MobileCarousel.css";
-import PreloadMaskMobile from "./PreloadMaskMobile";
 import MobileInlineCarousel from "./MobileInlineCarousel";
-
 import { conceptAssets } from "../../assets/assetData";
+import { getLumenAll } from "../../assets/assetsRight";
+import { getConceptLayout } from "../../config/conceptsLayout";
 
-// Reuse your desktop clusters for the preview canvases
-const ConceptCluster      = React.lazy(() => import("../MainContent/ConceptCluster"));
-const AbyssCluster        = React.lazy(() => import("../MainContent/AbyssCluster"));
-const EarlyAliensCluster  = React.lazy(() => import("../MainContent/EarlyAliensCluster"));
+const ConceptCluster = React.lazy(() =>
+  import("../MainContent/ConceptCluster").then((module) => ({
+    default: module.default ?? module.ConceptCluster,
+  }))
+);
+const PenumbraCluster = React.lazy(() => import("../MainContent/PenumbraCluster"));
+const LumenCluster = React.lazy(() => import("../MainContent/LumenCluster"));
+const AbyssCluster = React.lazy(() => import("../MainContent/AbyssCluster"));
+const HatsCluster = React.lazy(() => import("../MainContent/HatsCluster"));
+const EarlyAliensCluster = React.lazy(() => import("../MainContent/EarlyAliensCluster"));
 
-// --- helper: degrees -> radians (so we can match desktop intent) ---
-const deg = (d) => (d * Math.PI) / 180;
+const PRELOAD_MODULES = [
+  () => import("../MainContent/ConceptCluster"),
+  () => import("../MainContent/PenumbraCluster"),
+  () => import("../MainContent/LumenCluster"),
+  () => import("../MainContent/AbyssCluster"),
+  () => import("../MainContent/HatsCluster"),
+  () => import("../MainContent/EarlyAliensCluster"),
+];
 
-/** Render a couple frames, then tell the loader this stage is drawing */
-function StageReadySentinel({ onReady }) {
-  const frames = useRef(0);
-  useFrame(() => { if (frames.current < 3) frames.current += 1; });
-  useEffect(() => {
-    let raf;
-    const tick = () => {
-      if (frames.current >= 3) onReady?.();
-      else raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [onReady]);
-  return null;
+function toScaleArray(value) {
+  if (Array.isArray(value)) return value;
+  const v = typeof value === "number" ? value : 1;
+  return [v, v, v];
 }
 
-/** One vertical “stage”: 3D preview canvas, then inline carousel right below it */
-function ClusterStage({ type, cluster, onOpenOverlay, onStageReady }) {
-  // Keep the camera simple and unwarped; tilt the *cluster group* where needed
-  const camFov = 44;
-  const camPos = useMemo(() => {
-    // Pull the Abyss camera *back and up* a bit so the floor is visible and perspective is calmer.
-    if (type === "abyss") return [0, 5.0, 46];
-    if (type === "early") return [0, 1.0, 28];
-    return [0, 4.0, 26]; // root
-  }, [type]);
-  // NEW: preview scale per cluster so everything reads larger
-  const previewScale = useMemo(() => {
-    if (type === "early") return 1.35;   // NEW
-    if (type === "abyss") return 1.28;   // NEW
-    // Root cluster: reduce slightly to gain more top headroom in the canvas
-    return 1.18;                          // NEW (root)
-  }, [type]);
-const previewOffsetY = useMemo(() => {
-  if (type === "root")  return 0;  // up a bit from -0.60
-  if (type === "abyss") return 0;  // keep your current
-  if (type === "early") return 0;  // keep your current
-  return -0.60;
-}, [type]);
+function PreviewCanvas({ children, preview }) {
+  const devicePixelRatio =
+    typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  const maxDpr = Math.max(1, Math.min(1.5, devicePixelRatio));
 
-  // Tilt ONLY the group for abyss (match desktop feel: pitch -18°, yaw +12°)
-  const abyssRot = useMemo(() => [deg(10), deg(0), 0], []);
-  const handleOpenOverlay = useCallback(() => onOpenOverlay?.(cluster?.id), [onOpenOverlay, cluster?.id]);
+  const rotation = preview?.rotation ?? [0, 0, 0];
+  const centerOffset = preview?.centerOffset ?? [0, 0, 0];
+  const translate = preview?.translate ?? [0, 0, 0];
+  const biasY = preview?.biasY ?? 0;
+  const scale = toScaleArray(preview?.scale);
+  const position = [
+    (translate[0] ?? 0) + (centerOffset[0] ?? 0),
+    (translate[1] ?? 0) + (centerOffset[1] ?? 0) + biasY,
+    (translate[2] ?? 0) + (centerOffset[2] ?? 0),
+  ];
+
+  const cameraZ = preview?.cameraZ ?? 18;
+  const cameraY = preview?.cameraY ?? 1.5;
+  const cameraFov = preview?.fov ?? 42;
 
   return (
-    <section className="m-stage">
-      {/* 3D preview */}
-      <div className="m-stage-canvas" data-ready="true" onClick={handleOpenOverlay}>
-        <Canvas
-          dpr={[1, Math.min(1.75, window.devicePixelRatio || 1)]}
-          gl={{ antialias: true, powerPreference: "high-performance", alpha: false }}
-          shadows={false}
-        >
-          <PerformanceMonitor />
-          <AdaptiveDpr pixelated />
-          <PerspectiveCamera makeDefault fov={camFov} position={camPos} near={0.1} far={2000} />
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[5, 10, 5]} intensity={1.2} />
-
-          <StageReadySentinel onReady={onStageReady} />
-
-          <Suspense fallback={null}>
-            <group position={[0, previewOffsetY, 0]} scale={[previewScale, previewScale, previewScale]}>
-            {type === "root" && (
-              <ConceptCluster
-                id={cluster.id}
-                images={cluster.images}
-                layout={cluster.layout}
-                title={cluster.title}
-                subtitle={cluster.subtitle}
-                year={cluster.year}
-                isActive
-                mobile
-                position={[0, 0, 0]}
-                rotation={[0, 0, 0]}
-                scale={[1.3, 1.3, 1.3]}
-              />
-            )}
-
-            {type === "abyss" && (
-              // Wrap the cluster in a rotated group so the floor disk reads,
-              // and keep the cluster's own rotation neutral.
-              <group rotation={abyssRot}>
-                <AbyssCluster
-                  id="cluster-abyss"
-                  images={cluster?.images ?? []}
-                  isActive
-                  mobile
-                  position={[0, 0, 0]}
-                  rotation={[0, 0, 0]}
-                  baseScale={.8}
-                />
-              </group>
-            )}
-
-            {type === "early" && (
-              <EarlyAliensCluster
-                id="cluster-early-aliens"
-                assets={cluster?.assets ?? []}
-                isActive
-                mobile
-                position={[0, 0, 0]}
-                rotation={[0, 0, 0]}
-                baseScale={3}
-                scaleMul={1}
-                particlesPerGap={12}
-                densityBoost={0.55}
-                screenSpaceOnDesktop={false}
-              />
-            )}
-            </group>
-          </Suspense>
-        </Canvas>
-      </div>
-
-      {/* Inline, dummy-proof carousel for this cluster */}
-      <MobileInlineCarousel
-        type={type}
-        cluster={cluster}
-        onOpenOverlay={onOpenOverlay}
-      />
-    </section>
+    <div className="concept-mobile__preview">
+      <Canvas
+        className="concept-mobile__canvas"
+        dpr={[1, maxDpr]}
+        gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+        shadows={false}
+      >
+        <PerspectiveCamera makeDefault position={[0, cameraY, cameraZ]} fov={cameraFov} />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[5, 10, 5]} intensity={1.2} />
+        <Suspense fallback={null}>
+          <group position={position} rotation={rotation} scale={scale}>
+            {children}
+          </group>
+        </Suspense>
+      </Canvas>
+    </div>
   );
 }
 
-export default function ConceptSceneMobile() {
-  // Pull your three clusters from assetData
-  const rootCluster     = useMemo(() => conceptAssets.find(c => c?.id === "cluster-root") || null, []);
-  const abyssData       = useMemo(() => conceptAssets.find(c => c?.id === "cluster-abyss") || null, []);
-  const earlyAliensData = useMemo(() => conceptAssets.find(c => c?.id === "cluster-early-aliens") || null, []);
+function SectionPreview({ section }) {
+  const noop = () => {};
+  const controlsStub = useMemo(() => ({ current: null }), []);
+  const preview = section.preview ?? {};
 
-  const stages = useMemo(() => {
-    const items = [];
-    if (rootCluster)     items.push({ key: "cluster-root", type: "root",  data: rootCluster });
-    if (abyssData)       items.push({ key: "cluster-abyss", type: "abyss", data: abyssData });
-    if (earlyAliensData) items.push({ key: "cluster-early-aliens", type: "early", data: earlyAliensData });
-    return items;
-  }, [rootCluster, abyssData, earlyAliensData]);
+  switch (section.type) {
+    case "root":
+      return (
+        <PreviewCanvas preview={preview}>
+          <ConceptCluster
+            id={section.cluster.id}
+            images={section.cluster.images}
+            layout={section.cluster.layout}
+            title={section.cluster.title}
+            subtitle={section.cluster.subtitle}
+            year={section.cluster.year}
+            isActive={false}
+            mobile
+            enableStones
+            preferThumb
+            onActivate={noop}
+            onShowCarousel={noop}
+            setControlsEnabled={noop}
+          />
+        </PreviewCanvas>
+      );
+    case "penumbra":
+      return (
+        <PreviewCanvas preview={preview}>
+          <PenumbraCluster
+            id={section.cluster.id}
+            images={section.cluster.images}
+            layout={section.cluster.layout}
+            title={section.cluster.title}
+            subtitle={section.cluster.subtitle}
+            year={section.cluster.year}
+            palette={section.cluster.palette}
+            extrusion={section.cluster.extrusion}
+            isActive={false}
+            mobile
+            preview
+            setControlsEnabled={noop}
+            onActivate={noop}
+          />
+        </PreviewCanvas>
+      );
+    case "lumen":
+      return (
+        <PreviewCanvas preview={preview}>
+          <LumenCluster
+            id="cluster-lumen"
+            position={[0, 0, 0]}
+            rotation={[0, 0, 0]}
+            scale={[1, 1, 1]}
+            setControlsEnabled={noop}
+            controlsRef={controlsStub}
+            interactive={false}
+            visibleSub="all"
+          />
+        </PreviewCanvas>
+      );
+    case "abyss":
+      return (
+        <PreviewCanvas preview={preview}>
+          <AbyssCluster
+            id={section.cluster.id}
+            images={section.cluster.images}
+            position={[0, 0, 0]}
+            rotation={[0, 0, 0]}
+            baseScale={section.layout?.baseScale ?? section.cluster.baseScale ?? 1}
+            isActive={false}
+            mobile
+            setControlsEnabled={noop}
+            controlsRef={controlsStub}
+            onActivate={noop}
+          />
+        </PreviewCanvas>
+      );
+    case "hats":
+      return (
+        <PreviewCanvas preview={preview}>
+          <HatsCluster
+            id={section.cluster.id}
+            assets={section.cluster.assets ?? []}
+            isActive={false}
+            baseScale={section.layout?.baseScale ?? 1}
+            setControlsEnabled={noop}
+            onActivate={noop}
+          />
+        </PreviewCanvas>
+      );
+    case "early":
+      return (
+        <PreviewCanvas preview={preview}>
+          <EarlyAliensCluster
+            id={section.cluster.id}
+            assets={section.cluster.assets ?? []}
+            isActive={false}
+            baseScale={section.layout?.baseScale ?? 1}
+            setControlsEnabled={noop}
+            onActivate={noop}
+          />
+        </PreviewCanvas>
+      );
+    default:
+      return null;
+  }
+}
 
-  // Fullscreen overlay (unchanged behavior)
-  const [activeClusterId, setActiveClusterId] = useState(null);
-  const openOverlay  = useCallback((id) => setActiveClusterId(id), []);
-  const closeOverlay = useCallback(() => setActiveClusterId(null), []);
-
-  // Minimal loader: wait for all stages to draw a couple frames
-  const MIN_LOADER_MS = 600;
-  const SAFETY_MS     = 7000;
-  const startRef = useRef(performance.now());
-  const [readyCount, setReadyCount] = useState(0);
-  const [showLoader, setShowLoader] = useState(true);
+function SectionWrapper({ section, onVisible, children }) {
+  const ref = useRef(null);
 
   useEffect(() => {
-    const safety = setTimeout(() => setShowLoader(false), SAFETY_MS);
-    return () => clearTimeout(safety);
-  }, []);
-
-  const onStageReady = useCallback(() => {
-    setReadyCount((n) => {
-      const next = n + 1;
-      if (next >= stages.length) {
-        const elapsed = performance.now() - startRef.current;
-        const remain  = Math.max(0, MIN_LOADER_MS - elapsed);
-        if (remain > 0) setTimeout(() => setShowLoader(false), remain);
-        else setShowLoader(false);
-      }
-      return next;
-    });
-  }, [stages.length]);
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) onVisible(section.key);
+        });
+      },
+      { rootMargin: "25% 0px 25% 0px", threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [section.key, onVisible]);
 
   return (
-    <div className={`m-wrap${showLoader ? " is-loading" : ""}`} aria-label="Concept clusters (mobile)">
-      <div className="m-list">
-        {stages.map(({ key, type, data }) => (
-          <ClusterStage
-            key={key}
-            type={type}
-            cluster={data}
-            onOpenOverlay={openOverlay}
-            onStageReady={onStageReady}
-          />
-        ))}
-      </div>
+    <article ref={ref} className="concept-mobile__section" data-section-key={section.key}>
+      {children}
+    </article>
+  );
+}
 
-      {/* Fullscreen overlay still works; the inline carousel doesn't replace it */}
-      {activeClusterId && (
-        <React.Suspense fallback={null}>
-          {/* Your existing fullscreen overlay component is opened from elsewhere */}
-        </React.Suspense>
-      )}
+const MOBILE_LAYOUT = getConceptLayout({ isMobile: true, isTablet: false });
 
-      <PreloadMaskMobile visible={showLoader} />
+function buildSections(lumenAssets) {
+  const layoutMap = MOBILE_LAYOUT?.clusters ?? {};
+
+  const root = conceptAssets.find((cluster) => cluster.id === "cluster-root");
+  const penumbra = conceptAssets.find((cluster) => cluster.id === "cluster-penumbra");
+  const abyss = conceptAssets.find((cluster) => cluster.id === "cluster-abyss");
+  const hats = conceptAssets.find((cluster) => cluster.id === "cluster-hats");
+  const early = conceptAssets.find((cluster) => cluster.id === "cluster-early-aliens");
+
+  const applyPreview = (key, cluster, overrides = {}) => {
+    const layout = layoutMap[key] ?? {};
+    const previewCfg = layout.preview ?? {};
+    const centerOffset =
+      previewCfg.centerFromLayout && Array.isArray(layout.position)
+        ? layout.position.map((v) => (typeof v === "number" ? -v : 0))
+        : [0, 0, 0];
+
+    return {
+      key: overrides.key ?? cluster?.id ?? `cluster-${key}`,
+      type: overrides.type ?? key,
+      title: overrides.title ?? cluster?.title ?? "",
+      subtitle: overrides.subtitle ?? cluster?.subtitle ?? "",
+      year: overrides.year ?? cluster?.year ?? "",
+      cluster: cluster ?? overrides.cluster ?? {},
+      preview: {
+        ...previewCfg,
+        centerOffset,
+        translate: overrides.preview?.translate ?? [0, 0, 0],
+        cameraZ: overrides.preview?.cameraZ ?? previewCfg.cameraZ,
+        cameraY: overrides.preview?.cameraY ?? previewCfg.cameraY,
+        fov: overrides.preview?.fov ?? previewCfg.fov,
+      },
+      layout,
+    };
+  };
+
+  return [
+    root && applyPreview("root", root),
+    penumbra && applyPreview("penumbra", penumbra),
+    applyPreview("lumen", null, {
+      key: "cluster-lumen",
+      type: "lumen",
+      title: "Lumen",
+      subtitle: "Surveillance and astral echoes",
+      year: "2023",
+      cluster: { images: lumenAssets },
+    }),
+    abyss && applyPreview("abyss", abyss),
+    hats && applyPreview("hats", hats),
+    early && applyPreview("early", early),
+  ].filter(Boolean);
+}
+
+export default function ConceptSceneMobile() {
+  const lumenAssets = useMemo(() => getLumenAll(), []);
+  const sections = useMemo(() => buildSections(lumenAssets), [lumenAssets]);
+  const initialKeys = useMemo(
+    () => sections.slice(0, 1).map((section) => section.key),
+    [sections]
+  );
+  const [visibleKeys, setVisibleKeys] = useState(() => initialKeys);
+  useEffect(() => {
+    setVisibleKeys((prev) => {
+      const merged = new Set([...initialKeys, ...prev]);
+      return Array.from(merged);
+    });
+  }, [initialKeys]);
+  const visibleSet = useMemo(() => new Set(visibleKeys), [visibleKeys]);
+  const handleVisible = useCallback((key) => {
+    setVisibleKeys((prev) => {
+      if (prev.includes(key)) return prev;
+      return [...prev, key];
+    });
+  }, []);
+  useEffect(() => {
+    PRELOAD_MODULES.forEach((loader) => {
+      try {
+        loader();
+      } catch {
+        /* ignore prefetch issues */
+      }
+    });
+  }, []);
+
+  return (
+    <div className="concept-mobile">
+      {sections.map((section) => (
+        <SectionWrapper key={section.key} section={section} onVisible={handleVisible}>
+          {visibleSet.has(section.key) ? (
+            <SectionPreview section={section} />
+          ) : (
+            <div className="concept-mobile__preview concept-mobile__preview--placeholder">
+              Loading…
+            </div>
+          )}
+
+          <div className="concept-mobile__meta">
+            <h2 className="concept-mobile__title">{section.title}</h2>
+            {section.subtitle ? (
+              <p className="concept-mobile__subtitle">{section.subtitle}</p>
+            ) : null}
+            {section.year ? (
+              <p className="concept-mobile__year">{section.year}</p>
+            ) : null}
+          </div>
+
+          <div className="concept-mobile__carousel">
+            <MobileInlineCarousel
+              type={section.type}
+              cluster={section.cluster}
+              showMeta={false}
+            />
+          </div>
+        </SectionWrapper>
+      ))}
     </div>
   );
 }

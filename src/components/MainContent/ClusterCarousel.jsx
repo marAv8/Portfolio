@@ -17,14 +17,33 @@ export default function ClusterCarousel({
   onIndexChange,         // called whenever active index changes (with wrapped idx)
   onClose,               // close handler (optional)
 }) {
-  // Normalize to plain URLs
-  const urls = useMemo(() => {
-    return (images || [])
-      .map((it) =>
-        typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null
-      )
-      .filter(Boolean);
-  }, [images]);
+const entries = useMemo(() => {
+  const list = Array.isArray(images) ? images : [];
+  return list
+    .filter((item) => {
+      if (!item) return false;
+      if (typeof item === "string") return true;
+      return !item.hidden;
+    })
+    .map((item) => {
+      if (typeof item === "string") {
+        return {
+          src: item,
+          isVideo: /\.(mp4|webm)(\?.*)?$/i.test(item),
+          poster: undefined,
+        };
+      }
+      const src = item.full || item.url || item.src || item.image || item.path || null;
+      const isVideo =
+        item.type === "video" || (typeof src === "string" && /\.(mp4|webm)(\?.*)?$/i.test(src));
+      return {
+        src,
+        isVideo,
+        poster: item.poster || item.thumb || undefined,
+      };
+    })
+    .filter((entry) => Boolean(entry.src));
+}, [images]);
 
   // Wrap helper for infinite looping
   const wrap = useCallback((i, len) => {
@@ -34,20 +53,20 @@ export default function ClusterCarousel({
 
   // Controlled/uncontrolled bookkeeping
   const isControlled = controlled != null;
-  const [internal, setInternal] = useState(() => wrap(startIndex || 0, urls.length));
-  const idx = isControlled ? wrap(controlled, urls.length) : internal;
+  const [internal, setInternal] = useState(() => wrap(startIndex || 0, entries.length));
+  const idx = isControlled ? wrap(controlled, entries.length) : internal;
 
   // Reset internal index if startIndex or list length changes
   useEffect(() => {
-    if (!isControlled) setInternal(wrap(startIndex || 0, urls.length));
+    if (!isControlled) setInternal(wrap(startIndex || 0, entries.length));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startIndex, urls.length]);
+  }, [startIndex, entries.length]);
 
   // Unified setter that wraps and reflects to parent if controlled
   const setIndex = useCallback(
     (updater) => {
       const nextRaw = typeof updater === "function" ? updater(idx) : updater;
-      const next = wrap(nextRaw, urls.length);
+      const next = wrap(nextRaw, entries.length);
       if (isControlled) {
         onIndexChange?.(next);
       } else {
@@ -55,7 +74,7 @@ export default function ClusterCarousel({
         onIndexChange?.(next);
       }
     },
-    [idx, wrap, urls.length, isControlled, onIndexChange]
+    [idx, wrap, entries.length, isControlled, onIndexChange]
   );
 
   const next = useCallback(() => setIndex(i => i + 1), [setIndex]);
@@ -74,10 +93,12 @@ export default function ClusterCarousel({
     const dx = ex - sx;
     if (Math.abs(dx) > 40) (dx < 0 ? next : prev)();
   };
-
+  const total = entries.length;
+  const current = entries[idx] || { src: "", isVideo: false, poster: undefined };
+  const { src, isVideo, poster } = current;
   // Media selection
-  const src = urls[idx] || "";
-  const isVideo = /\.(mp4|webm)(\?.*)?$/i.test(src);
+  // const src = urls[idx] || "";
+  // const isVideo = /\.(mp4|webm)(\?.*)?$/i.test(src);
 
   return (
     <div className="carousel-wrapper">
@@ -95,15 +116,24 @@ export default function ClusterCarousel({
         onTouchEnd={onPointerUp}
       >
         <div className="image-wrapper">
-          {urls.length ? (
-            isVideo ? (
-              <video className="carousel-image" src={src} autoPlay muted loop playsInline />
-            ) : (
-              <img className="carousel-image" src={src} alt="" draggable={false} />
-            )
-          ) : (
-            <div className="mc-empty">No media found</div>
-          )}
+     {entries.length ? (
+        isVideo ? (
+          <video
+            key={src}
+            className="carousel-image"
+            src={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster={poster}
+          />
+        ) : (
+          <img key={src} className="carousel-image" src={src} alt="" draggable={false} />
+        )
+      ) : (
+        <div className="mc-empty">No media found</div>
+      )}
         </div>
       </div>
 
@@ -112,7 +142,7 @@ export default function ClusterCarousel({
       {/* Tablet & Mobile dots — centered under the media pane */}
       <PaginationDots
         index={idx}
-        total={urls.length}
+        total={entries.length}
         onDotClick={setIndex}
         maxVisible={9}
       />

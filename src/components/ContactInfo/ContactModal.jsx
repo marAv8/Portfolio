@@ -19,13 +19,7 @@ export default function ContactModal({ onClose }) {
 
       <div className="resume-content-centered">
         <ul className="artist-statement">
-        My work begins where I used to end — at the idea that rootedness was a cage.
-
-          For a long time I rejected form, pattern, and place, believing they dulled perception. But when I finally let myself root — not into identity, but into quiet clarity — a language of vision opened.
-
-          The sketches are transmissions from that rooted place: soft, symbolic, not meant to explain but to echo. The AI work is a field of play, a blending of memory, myth, and visual instinct.
-
-          This is not a narrative. It’s a reconstruction of sight — where ideas arrive as images, and images are kept whole.
+        Constructed with React, Three.js and WebGl. Each cluster is its own world born from sketches and reimagined through MidJourney.
                     </ul>
 
       </div>

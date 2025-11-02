@@ -61,6 +61,19 @@ export default function SatelliteRingCluster({
   const movedRef     = useRef(false);
   const startRef     = useRef([0, 0]);
   const lastRef      = useRef([0, 0]);
+  // === local particle palettes (pulled from your preload themes) ===
+const PARTICLE_PALETTES = {
+  warm:     { core:'#FFF8DC', mid:'#FFECB3', glow:'#FFECB3' },
+  abyss:    { core:'#FFA5AD', mid:'#70595B', glow:'#FFFFFF' },
+  early:    { core:'#38E1FF', mid:'#00C2FF', glow:'#00D6FF' },
+  penumbra: { core:'#F6EEFF', mid:'#CEA0FF', glow:'#BB84FF' },
+  hats:     { core:'#FFEAF2', mid:'#F5B9E3', glow:'#C892FF' },
+};
+
+// pool = every “core/mid/glow” across variants (nice variety)
+const PARTICLE_COLOR_POOL = [
+  ...Object.values(PARTICLE_PALETTES).flatMap(p => [p.core, p.mid, p.glow]),
+];
 
   const [hovered, setHovered] = useState(false);
   useCursor(hovered);
@@ -319,6 +332,7 @@ const particleSprite = useMemo(() => {
   const totalParticles = n * particlesPerGap;
   const geomRef   = useRef(null);
   const posBufRef = useRef(new Float32Array(totalParticles * 3));
+  const colBufRef = useRef(new Float32Array(totalParticles * 3));
 
   const gapIndex = useRef(new Uint16Array(totalParticles));
   const aLocal   = useRef(new Float32Array(totalParticles));
@@ -333,6 +347,7 @@ const particleSprite = useMemo(() => {
     const rand = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
 
     posBufRef.current = new Float32Array(totalParticles * 3);
+    geomRef.current.setAttribute('color',    new THREE.BufferAttribute(colBufRef.current, 3));
     geomRef.current?.setAttribute('position', new THREE.BufferAttribute(posBufRef.current, 3));
 
     gapIndex.current = new Uint16Array(totalParticles);
@@ -356,6 +371,17 @@ const particleSprite = useMemo(() => {
         va.current[idx] = (rand() * 2 - 1) * tangentialSpeed * 0.6;
         vy.current[idx] = (rand() * 2 - 1) * verticalSpeed   * 0.6;
         vr.current[idx] = (rand() * 2 - 1) * radialSpeed     * 0.6;
+        
+        const pick = PARTICLE_COLOR_POOL[(idx * 7 + gi) % PARTICLE_COLOR_POOL.length];
+        const c = new THREE.Color(pick);
+        // tiny luminance jitter keeps it lively but not noisy
+        const jitter = (rand() - 0.5) * 0.10; // ±0.05 in lightness
+        c.offsetHSL(0, 0, jitter);
+
+        const base = idx * 3;
+        colBufRef.current[base + 0] = c.r;
+        colBufRef.current[base + 1] = c.g;
+        colBufRef.current[base + 2] = c.b;
       }
     }
   }, [
@@ -402,6 +428,8 @@ const particleSprite = useMemo(() => {
     if (geomRef.current) {
       const pAttr = geomRef.current.getAttribute('position');
       if (pAttr) pAttr.needsUpdate = true;
+      const cAttr = geomRef.current.getAttribute('color');
+      if (cAttr && !cAttr.needsUpdate) { /* no-op */ }
     }
   });
 
@@ -467,6 +495,7 @@ const particleSprite = useMemo(() => {
            map={particleSprite}
             size={particleSize}
             sizeAttenuation
+            vertexColors 
             color={particleColor}
             transparent
             opacity={particleOpacity}
@@ -486,6 +515,7 @@ const particleSprite = useMemo(() => {
         map={particleSprite}
         size={particleSize * 8}
         sizeAttenuation={false}        // constant pixel size
+        vertexColors
         color={particleColor}
         transparent
         // opacity={particleOpacity * 0.05}
@@ -503,6 +533,7 @@ const particleSprite = useMemo(() => {
         map={particleSprite}
         size={particleSize * 8}
         sizeAttenuation={false}
+          vertexColors
         color={particleColor}
         transparent
         // opacity={particleOpacity * 0.05}
@@ -533,6 +564,7 @@ const particleSprite = useMemo(() => {
 )}
 
         {assets.map((a, i) => (
+          
           <group key={i} ref={el => (itemsRef.current[i] = el)}>
             <Panel
               scale={[pw, ph, 1]}

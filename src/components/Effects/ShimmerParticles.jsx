@@ -23,8 +23,10 @@ function makeCircleSprite(size = 64) {
 export default function ShimmerParticles({
   center = [0,0,0],
   normal = [0,1,0],
-
-  // scale with disk radius (if provided)
+  fallDirection = null,        
+  fallDirectionWorld = null,
+   stopAtSink = true,        // NEW: kill particles when they hit the sink plane
+  stopEpsilon = 0.02,
   scaleWith = null,
   innerRatio = 0.75,
   outerRatio = 1.02,
@@ -44,11 +46,10 @@ export default function ShimmerParticles({
 
   // band keeper (prevents a cone)
   keepBand = true,
-  bandSpring = 2.0,        // how strongly we keep radius ~ initial
+  bandSpring = 3.0,        // how strongly we keep radius ~ initial
   bandDamp = 0.985,
 
-  // budget & look
-  maxParticles = 1400,
+  maxParticles = 1000,
   color = '#FF2626',
   size = 2.0,
   baseOpacity = 0.6,
@@ -112,13 +113,32 @@ export default function ShimmerParticles({
   // temps to avoid GC churn
   const C = useMemo(() => new THREE.Vector3(...center), [center]);
   const tmp = useMemo(() => new THREE.Vector3(), []);
+  const downLocal = useMemo(() => new THREE.Vector3(), []);
+  const upAxis = useMemo(() => new THREE.Vector3(), []);
+  const invMatrix = useMemo(() => new THREE.Matrix4(), []);
+  const fallLocalProp = useMemo(() => fallDirection ? new THREE.Vector3(...fallDirection).normalize() : null, [fallDirection]);
+  const fallWorldProp = useMemo(() => fallDirectionWorld ? new THREE.Vector3(...fallDirectionWorld).normalize() : null, [fallDirectionWorld]);
+  const defaultUpAxis = useMemo(() => new THREE.Vector3(...normal).normalize(), [normal]);
+  const containerRef = useRef();
 
   useFrame((_, dt) => {
     const { U, V, N } = basis;
     C.set(...center); // allow animated center
 
-    // vertical aim point (only along N)
-    const sink = tmp.copy(C).addScaledVector(N, sinkZ);
+if (fallLocalProp) {
+      downLocal.copy(fallLocalProp);
+    } else if (fallWorldProp && containerRef.current) {
+      invMatrix.copy(containerRef.current.matrixWorld).invert();
+      downLocal.copy(fallWorldProp).transformDirection(invMatrix).normalize();
+    } else {
+      downLocal.copy(defaultUpAxis).multiplyScalar(-1);
+    }
+
+    if (downLocal.lengthSq() === 0) {
+      downLocal.copy(defaultUpAxis).multiplyScalar(-1);
+    }
+    upAxis.copy(downLocal).multiplyScalar(-1).normalize();
+    downLocal.normalize();
 
     // continuous spawn
     spawnAcc.current += spawnRate * dt;
@@ -143,9 +163,9 @@ export default function ShimmerParticles({
       positions[j+2] = P.z;
 
       // initial vel: downward + tiny swirl
-      velocities[j]   = -N.x * fallSpeed + (Math.random()-0.5) * swirl;
-      velocities[j+1] = -N.y * fallSpeed + (Math.random()-0.5) * swirl;
-      velocities[j+2] = -N.z * fallSpeed + (Math.random()-0.5) * swirl * 0.4;
+      velocities[j]   = downLocal.x * fallSpeed + (Math.random()-0.5) * swirl;
+      velocities[j+1] = downLocal.y * fallSpeed + (Math.random()-0.5) * swirl;
+      velocities[j+2] = downLocal.z * fallSpeed + (Math.random()-0.5) * swirl * 0.4;
 
       ages[i] = life;
       rTarget[i] = r; // remember the ring radius at spawn
@@ -165,14 +185,24 @@ export default function ShimmerParticles({
       // decompose into (U,V,N): u = rel·U etc.
       const u = relX*U.x + relY*U.y + relZ*U.z;
       const v = relX*V.x + relY*V.y + relZ*V.z;
-      const h = relX*N.x + relY*N.y + relZ*N.z;           // height along normal
-      const rNow = Math.hypot(u, v);
+      const h = relX*upAxis.x + relY*upAxis.y + relZ*upAxis.z; 
+       const rNow = Math.hypot(u, v);
+      
+       // --- hard stop at the ground plane ---
+      // Remember: `sinkZ` is the target height along +upAxis. Particles fall *toward* it.
+      // Once h <= sinkZ (accounting for a tiny epsilon), we "land" and despawn.
+      if (stopAtSink && h <= (sinkZ + stopEpsilon)) {
+        ages[i] = 0;                       // kill
+        positions[j]   = OFF;              // park off-screen
+        positions[j+1] = OFF;
+        positions[j+2] = OFF;
+        continue;
+      }
 
-      // 2a) vertical-only pull toward sink height
-      const dh = (sinkZ) - h; // difference along N
-      velocities[j]   += N.x * (dh * attractStrength) * dt;
-      velocities[j+1] += N.y * (dh * attractStrength) * dt;
-      velocities[j+2] += N.z * (dh * attractStrength) * dt;
+      const dh = (sinkZ) - h; // difference along up axis
+      velocities[j]   += upAxis.x * (dh * attractStrength) * dt;
+      velocities[j+1] += upAxis.y * (dh * attractStrength) * dt;
+      velocities[j+2] += upAxis.z * (dh * attractStrength) * dt;
 
       // 2b) keep radius near spawn radius to avoid a cone
       if (keepBand && rNow > 1e-6) {
@@ -204,11 +234,11 @@ export default function ShimmerParticles({
 
   // render
   return (
-    <>
-      <points geometry={geometry} material={coreMat} raycast={null} frustumCulled={false} renderOrder={18}/>
-      {addGlow && (
-        <points geometry={geometry} material={haloMat} raycast={null} frustumCulled={false} renderOrder={17}/>
-      )}
-    </>
+       <group ref={containerRef}>
+            <points geometry={geometry} material={coreMat} raycast={null} frustumCulled={false} renderOrder={18}/>
+            {addGlow && (
+              <points geometry={geometry} material={haloMat} raycast={null} frustumCulled={false} renderOrder={17}/>
+            )}
+        </group>
   );
 }

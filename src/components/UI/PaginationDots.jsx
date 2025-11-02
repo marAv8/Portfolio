@@ -1,4 +1,4 @@
-//PaginationDots.jsx
+// PaginationDots.jsx
 import React, { useMemo } from "react";
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
 import "./PaginationDots.css";
@@ -9,29 +9,35 @@ import "./PaginationDots.css";
  * - Dots away from the active shrink & fade a bit (like Instagram)
  */
 export default function PaginationDots({
-  index,
-  total,
+  index = 0,
+  total = 0,
   onDotClick,
-  maxVisible = 9,           // feel free to try 7 or 9
+  maxVisible = 9,
 }) {
   const { isMobile, isTablet } = useScreenSize();
-  if (!isMobile && !isTablet) return null;
 
+  // ✅ Always call hooks — compute window even if we won't render
   const { start, end, visible } = useMemo(() => {
     const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-    const window = Math.max(3, maxVisible); // safety
-    const half = Math.floor(window / 2);
+    const t = Math.max(0, Number(total) || 0);
+    const i = clamp(Number(index) || 0, 0, Math.max(0, t - 1));
+    const windowSize = Math.max(3, Number(maxVisible) || 3);
+    const half = Math.floor(windowSize / 2);
 
-    // keep the active index centered when possible
-    let s = clamp(index - half, 0, Math.max(0, total - window));
-    let e = Math.min(total, s + window);
+    let s = clamp(i - half, 0, Math.max(0, t - windowSize));
+    let e = Math.min(t, s + windowSize);
+
     const arr = [];
-    for (let i = s; i < e; i++) arr.push(i);
-    return { start: s, end: e, visible: arr };
+    for (let k = s; k < e; k++) arr.push(k);
+
+    return { start: s, end: e, visible: arr, i, t };
   }, [index, total, maxVisible]);
 
   const isEdgeClampedLeft  = start > 0;
   const isEdgeClampedRight = end < total;
+
+  // ❌ No hooks after this return
+  if (!isMobile && !isTablet) return null;
 
   return (
     <div
@@ -39,15 +45,13 @@ export default function PaginationDots({
       aria-label="Pagination"
       role="tablist"
     >
-      {/* Left fade when we truncated the head */}
       {isEdgeClampedLeft && <div className="dots-fade left" />}
 
       <div className="dots-viewport">
         {visible.map((i) => {
-          const dist = Math.abs(i - index);        // 0 at active, grows outward
+          const dist = Math.abs(i - index);
           const scale = i === index ? 1 : Math.max(0.6, 0.9 - dist * 0.08);
           const opacity = i === index ? 1 : Math.max(0.35, 0.85 - dist * 0.12);
-
           return (
             <button
               key={i}
@@ -61,7 +65,6 @@ export default function PaginationDots({
         })}
       </div>
 
-      {/* Right fade when we truncated the tail */}
       {isEdgeClampedRight && <div className="dots-fade right" />}
     </div>
   );

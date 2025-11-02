@@ -26,12 +26,14 @@ export default function AbyssCluster({
   setControlsEnabled = () => {},
   controlsRef,
 }) {
-  const { isMobile } = useScreenSize();
+  const { isMobile, isTablet } = useScreenSize?.() ?? { isMobile:false, isTablet:false };
+  const isDesktop = !isMobile && !isTablet;
   const groupRef   = useRef(null);
   const visualsRef = useRef(null);
   const planeRef   = useRef(null);
   const baseRef    = useRef(null);
   const NO_RAYCAST = () => null;
+  
 
   const AUTO_TILT = false;
   useAutoTiltToCamera(baseRef, { factor: 0.88, enabled: AUTO_TILT });
@@ -61,10 +63,14 @@ const TAP_SCROLL_PX = 8;   // page scroll guard
   const BASE  = useMemo(() => [baseScale, baseScale, baseScale], [baseScale]);
   const HOVER = 1.06;
   const [{ s }, api] = useSpring(() => ({ s: BASE, config: { tension: 170, friction: 18 } }));
+  // expand only on desktop hover and never while dragging or active
   useEffect(() => {
-    const mul = hovered && !isActive && !draggingRef.current ? HOVER : 1;
-    api.start({ s: BASE.map(v => v * mul) });
-  }, [hovered, isActive, BASE, api]);
+  const mul = isDesktop && hovered && !isActive && !draggingRef.current ? 1.06 : 1;
+  api.start({ s: BASE.map(v => v * mul) });   // or api.start({ s: scale.map(v=>v*mul) }) in Concept
+}, [isDesktop, hovered, isActive, api]);
+
+  // collapse on overlay activation/deactivation
+  useEffect(() => { setHovered(false); }, [isActive]);
 
   // visuals never raycast
   useEffect(() => {

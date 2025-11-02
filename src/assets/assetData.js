@@ -1,6 +1,5 @@
-// src/assets/assetData.js
-import { abyssAssets } from './assetsLeft';
-import { earlyAliensAssets } from './assetsLeft';
+import { abyssAssets, earlyAliensAssets, penumbraAssets } from './assetsLeft';
+import { hatsAssets } from './assetsRight';
 // Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
 const toVariantUrls = (url) => {
   if (typeof url !== 'string') return { thumb: url, full: url };
@@ -121,98 +120,204 @@ for (let s = 0; s < STACK_COUNT; s++) {
   });
 }
 
-// Root Cluster Digital Stones (kept as-is)
-const center = [0, 1, 1.5];
-const radius = 0.5;
-const count = 6;
-const angleStep = (Math.PI * 2) / count;
+// Root Cluster Digital Stones (Ring A)
+const centerA = [-0.9, 0.52, 1.5];
+const radiusA = 0.52;
+const countA  = 6;
+const angleStepA = (Math.PI * 2) / countA;
 
-const digitalStones = Array.from({ length: count }).map((_, i) => {
-  const angle = i * angleStep;
-  const x = center[0] + Math.sin(angle) * radius;
-  const z = center[2] + Math.cos(angle) * radius;
-  const position = [x, center[1], z];
-  const rotation = [0, angle, 0];
+const makeVariantEntry = (path) => {
+  const { thumb, full } = toVariantUrls(path);
+  return { thumb, full, url: full || thumb };
+};
 
+const digitalStones = Array.from({ length: countA }).map((_, i) => {
+  const id = i + 1;
+  const angle = i * angleStepA;
+  const x = centerA[0] + Math.sin(angle) * radiusA;
+  const z = centerA[2] + Math.cos(angle) * radiusA;
+  const variants = makeVariantEntry(`/media/concepts/Root/PDigital${id}.png`);
   return {
-    url: `/media/concepts/Root/PDigital${i + 1}.png`,
-    position,
-    rotation,
-    scale: [0.5, 0.8, 1],
+    ...variants,
+    hidden: id !== 6,
+    position: [x, centerA[1], z],
+    rotation: [0, angle, 0],
+    scale: [0.60, 0.8, 1],
     isFloating: true,
+    ring: 'A',
+  };
+});
+// Ring B — uses your six images, shown in a matching circle next to Ring A
+const ringBFileNames = [
+  'boug2.png',
+  'boug3.png',
+  'BougMuse3.png',
+  'BougMuse4.png',
+  'niji.webp',
+  'TriptychTwin.png',
+];
+
+// Ring B — identical settings, shifted RIGHT
+const centerB = [0.9, 0.52, 1.5];    // symmetrical to centerA
+const radiusB = 0.52;                // same radius as A
+const angleStepB = (Math.PI * 2) / ringBFileNames.length;
+
+const digitalStonesB = ringBFileNames.map((name, i) => {
+  const a = i * angleStepB;
+  const x = centerB[0] + Math.sin(a) * radiusB;
+  const z = centerB[2] + Math.cos(a) * radiusB;
+  const variants = makeVariantEntry(`/media/concepts/Root/${name}`);
+  return {
+    ...variants,
+    hidden: name !== 'boug2.png',
+    position: [x, centerB[1], z],
+    rotation: [0, a, 0],            // face outward
+    scale: [0.60, 0.8, 1],          // gentle editorial scale
+    panelColor: '#F5EFE6',          // optional: warm tone like Ring A
+    panelOpacity: 0.9,
+    isFloating: true,
+    ring: 'B',
   };
 });
 
-// Enrich cluster images with {thumb, full} automatically
-const enrichClusterImages = (images = []) =>
-  images.map((img) => {
-    if (!img?.url) return img;
-    const { thumb, full } = toVariantUrls(img.url);
-    return { ...img, thumb, full };
-  });
+const ROOT_STATIC_IMAGES = [
+  {
+    url: '/media/concepts/Root/RootAya_1024.webp',
+    thumb: '/media/concepts/Root/RootAya_1024.webp',
+    full: '/media/concepts/Root/RootAya_1600.webp',
+    position: [0, 1.4, -2],
+    scale: [2.4, 2.8, 1],
+    rotation: [0, 0, 0],
+    title: 'Root Sketches, 2022',
+  },
+  {
+    url: '/media/concepts/Root/Root3_1024.webp',
+    thumb: '/media/concepts/Root/Root3_1024.webp',
+    full: '/media/concepts/Root/Root3_1600.webp',
+    position: [1.5, 0.9, -0.5],
+    scale: [1.4, 1.7, 1],
+    rotation: [0, 0, 0],
+    hidden: true,
+  },
+  {
+    url: '/media/concepts/Root/RootPray_1024.webp',
+    thumb: '/media/concepts/Root/RootPray_1024.webp',
+    full: '/media/concepts/Root/RootPray_1600.webp',
+    position: [2.5, 0.6, 0],
+    scale: [0.9, 1.2, 1],
+    rotation: [0, 0, 0],
+    hidden: true,
+  },
+  {
+    url: '/media/concepts/Root/RootProblem_1024.webp',
+    thumb: '/media/concepts/Root/RootProblem_1024.webp',
+    full: '/media/concepts/Root/RootProblem_1600.webp',
+    position: [-1.5, 0.9, -0.5],
+    scale: [1.2, 1.7, 1],
+    rotation: [0, 0, 0],
+    hidden: true,
+  },
+  {
+    url: '/media/concepts/Root/RootProblemInverse_1024.webp',
+    thumb: '/media/concepts/Root/RootProblemInverse_1024.webp',
+    full: '/media/concepts/Root/RootProblemInverse_1600.webp',
+    position: [-2.5, 0.65, 0],
+    scale: [1, 1.3, 1],
+    rotation: [0, 0, 0],
+    hidden: true,
+  },
+
+];
 
 export const conceptAssets = [
   {
     id: 'cluster-root',
+    flickerColor: '#fff2cc',
     layout: 'default',
     position: [0, 0, 0],
     title: 'Root Sketches',
     subtitle: 'Celestial Bodies',
     year: '2022',
-    images: enrichClusterImages([
-      {
-        url: '/media/concepts/Root/RootAya.png',
-        position: [0, 1.4, -2],
-        scale: [2.4, 2.8, 1],
-        rotation: [0, 0, 0],
-        title: 'Root Sketches, 2022'
-      },
-      {
-        url: '/media/concepts/Root/Root3.png',
-        position: [1.5, 0.9, -0.5],
-        scale: [1.4, 1.7, 1],
-        rotation: [0, 0, 0],
-      },
-      {
-        url: '/media/concepts/Root/RootPray.png',
-        position: [2.5, 0.6, 0],
-        scale: [0.9, 1.2, 1],
-        rotation: [0, 0, 0],
-      },
-      {
-        url: '/media/concepts/Root/RootProblem.png',
-        position: [-1.5, 0.9, -0.5],
-        scale: [1.2, 1.7, 1],
-        rotation: [0, 0, 0],
-      },
-      {
-        url: '/media/concepts/Root/RootProblemInverse.png',
-        position: [-2.5, 0.65, 0],
-        scale: [1, 1.3, 1],
-        rotation: [0, 0, 0],
-      },
-      // ✨ Clean circularly-oriented digital stones
+    images: [
+      ...ROOT_STATIC_IMAGES,
       ...digitalStones,
-    ]),
+      ...digitalStonesB,
+    ],
+  },
+  {
+    id: 'cluster-penumbra',
+    flickerColor: '#c6baff',
+    label: 'Penumbra',
+    layout: 'penumbra',
+    maskVariant: 'penumbra',
+    position: [0, 0, 0],
+    title: 'Penumbra ',
+    subtitle: 'Iridescent portraits suspended between light and shadow',
+    year: '2023',
+    palette: {
+      base: '#0b0916',
+      rim: '#201e37',
+      inner: '#2f2444',
+      accent: '#f6c899',
+      glow: '#8f6dff',
+    },
+    extrusion: {
+      outerRadius: 6.1,
+      innerRadius: 2.1,
+      accentRadius: 3.2,
+      thickness: 0.55,
+      clusterLift: 1.05,
+      clusterScale: 0.95,
+    },
+ // Use originals until variants are generated
+    images: penumbraAssets,
+    // Overlay should open on muse (first)
+    defaultStartKey: '/media/concepts/LeftScreen/Penumbra/muse.png',
   },
   {
     id: 'cluster-abyss',
     label: 'Abyss',
     title: 'Abyss',
     year: '2023',
-    subtitle: 'Study in red light, mirrored forms, and ritual geometry.',
+    subtitle: 'Study in red light and mirrored forms',
     position: [-3, -1, -2],
     scale: [1, 1, 1],
     images: abyssAssets,  // ✅ good
   },
-
+  {
+    id: 'cluster-hats',
+    label: 'Hats',
+    title: 'Headpieces & Hats',
+    year: '2023',
+    subtitle: 'Variations of hats/coverings',
+    // SatelliteRingCluster expects `assets` (like Early Aliens)
+    assets: hatsAssets,
+  },
 {
   id: 'cluster-early-aliens',
   label: 'Protoforms',
   title: 'Protoforms',
-  subtitle: 'MJ v3 portrait artifacts, 12-panel ring',
-  year: '2022–2023',
+  subtitle: 'MJ v3 portrait artifacts, 13-panel ring',
+  year: '2022',
   scale: [1,1,1],
   assets: earlyAliensAssets,   // ✅ keep as "assets"
 }
 ];
+export const penumbraData = {
+  id: "penumbra",
+  colors: {
+    bgStart: "#E7DBF1", // lilac (disk)
+    bgMid:   "#D6D1D2",
+    bgEnd:   "#595556",
+    tint:    "#9C9690",
+    accent:  "#F1E7FF",
+  },
+  radius: 5,
+  height: 2.8,
+  baseRadius: 0.08,
+  tipRadius: 0.16,
+  tipGap: 0.22,
+  position: [0, 0, 0],
+  rotation: [0, 0, 0],
+  baseScale: 2.6,
+};

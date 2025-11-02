@@ -14,6 +14,14 @@ const deg = (d) => THREE.MathUtils.degToRad(d);
 export default function AbyssOverlay({ cluster, onClose }) {
   const { isMobile, isTablet } = useScreenSize();
   const diagRef = React.useRef(null);
+  const visibleImages = useMemo(() => {
+    const arr = cluster?.images ?? [];
+    return arr.filter((item) => {
+      if (!item) return false;
+      if (typeof item === "string") return true;
+      return !item.hidden;
+    });
+  }, [cluster]);
 
   // 🔒 Freeze page scroll while overlay is open; restore on close
   useEffect(() => {
@@ -40,11 +48,10 @@ export default function AbyssOverlay({ cluster, onClose }) {
 
   // normalize urls ONCE so arrows know the length
   const urls = useMemo(() => {
-    const arr = cluster?.images ?? [];
-    return arr
+    return visibleImages
       .map((it) => (typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null))
       .filter(Boolean);
-  }, [cluster]);
+  }, [visibleImages]);
 
   // shared index (mobile & desktop)
   const [index, setIndex] = useState(0);
@@ -97,7 +104,7 @@ export default function AbyssOverlay({ cluster, onClose }) {
         </div>
 
         <ClusterCarousel
-          images={cluster?.images ?? []}
+          images={visibleImages}
           startIndex={index}
           onIndexChange={setIndex}
           onClose={onClose}
@@ -131,8 +138,8 @@ export default function AbyssOverlay({ cluster, onClose }) {
             id={cluster?.id || 'cluster-abyss'}
             images={cluster?.images || []}
             isActive={true}
-            position={[0, 0, 0]}
-            rotation={[deg(0), deg(-15), 0]}
+            position={[0, -4, 0]}
+            rotation={[deg(-7), deg(-15), 0]}
             baseScale={Array.isArray(scale) ? scale[0] : 1}
             billboard={false}
           />
@@ -155,7 +162,7 @@ export default function AbyssOverlay({ cluster, onClose }) {
       >
         {/* >>> Controlled carousel — responds to index <<< */}
         <ClusterCarousel
-          images={cluster?.images ?? []}
+          images={visibleImages}
            index={wrap(index)}
           onIndexChange={setIndex}
           onClose={onClose}

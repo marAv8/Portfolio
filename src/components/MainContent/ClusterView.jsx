@@ -12,7 +12,7 @@ export default function ClusterView({
   cluster,
   scale,
   metaThemeClass = 'meta-theme-warm',
-  maskVariant = 'warm',
+  maskVariant,
   render3D,                 // optional: ({ cluster, scale }) => ReactNode
   camera,                   // NEW: { fov?: number, position?: [x,y,z] }
 }) {
@@ -20,6 +20,24 @@ export default function ClusterView({
   const camFov = camera?.fov ?? 70;
   const camPos = camera?.position ?? [-10, 3, 22];
 
+  let resolvedMaskVariant = maskVariant ?? cluster?.maskVariant ?? cluster?.flickerVariant;
+
+  if (!resolvedMaskVariant) {
+    switch (cluster?.id) {
+      case 'cluster-abyss':
+        resolvedMaskVariant = 'abyss';
+        break;
+      case 'cluster-early-aliens':
+        resolvedMaskVariant = 'early';
+        break;
+      case 'cluster-root':
+        resolvedMaskVariant = 'root';
+        break;
+      case 'cluster-penumbra':
+        resolvedMaskVariant = 'penumbra';
+        break;
+    }
+  }
   return (
     <div
       style={{
@@ -62,7 +80,7 @@ export default function ClusterView({
         )}
       </Canvas>
 
-      <PreloadMask duration={1000} variant={maskVariant} />
+      <PreloadMask duration={1000} variant={resolvedMaskVariant} />
     </div>
   );
 }

@@ -1,4 +1,6 @@
 // src/components/MainContent/ConceptScene.jsx
+import * as THREE from "three";
+
 import React, {
   useEffect,
   useMemo,
@@ -16,16 +18,52 @@ import { conceptAssets } from "../../assets/assetData";
 import PreloadMask from "../Effects/PreloadMask";
 import './ConceptScene.css';
 
-// ✅ Your new mobile scene (separate, simpler code path)
- import ConceptSceneMobile from "../Mobile/ConceptSceneMobile";
+//Mobile scene
+import ConceptSceneMobile from "../Mobile/ConceptSceneMobile";
 
 // Lazy desktop clusters + overlays
-const ConceptCluster      = React.lazy(() => import("./ConceptCluster"));
-const AbyssCluster        = React.lazy(() => import("./AbyssCluster"));
-const EarlyAliensCluster  = React.lazy(() => import("./EarlyAliensCluster"));
-const RootOverlay         = React.lazy(() => import("../Overlays/RootOverlay"));
-const AbyssOverlay        = React.lazy(() => import("../Overlays/AbyssOverlay"));
-const EarlyAliensOverlay  = React.lazy(() => import("../Overlays/EarlyAliensOverlay"));
+const ConceptCluster     = React.lazy(() => import("./ConceptCluster"));
+const PenumbraCluster    = React.lazy(() => import("./PenumbraCluster"));
+const LumenCluster       = React.lazy(() => import("./LumenCluster"));
+const AbyssCluster       = React.lazy(() => import("./AbyssCluster"));
+const EarlyAliensCluster = React.lazy(() => import("./EarlyAliensCluster"));
+const HatsCluster        = React.lazy(() => import("./HatsCluster"));
+
+const RootOverlay        = React.lazy(() => import("../Overlays/RootOverlay"));
+const PenumbraOverlay    = React.lazy(() => import("../Overlays/PenumbraOverlay"));
+const LumenOverlay       = React.lazy(() => import("../Overlays/LumenOverlay"));
+const AbyssOverlay       = React.lazy(() => import("../Overlays/AbyssOverlay"));
+const EarlyAliensOverlay = React.lazy(() => import("../Overlays/EarlyAliensOverlay"));
+const HatsOverlay        = React.lazy(() => import("../Overlays/HatsOverlay"));
+
+console.log({
+  LumenOverlay, LumenCluster,
+  RootOverlay, PenumbraOverlay, AbyssOverlay, EarlyAliensOverlay,
+});
+
+
+// --- Focus camera on a group by name ---------------------------------
+function frameDistanceForBox({ box, camera, fovDeg = camera.fov, fit = 1.2 }) {
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const fov = (fovDeg * Math.PI) / 180;
+  // choose the larger of vertical/horizontal fov constraints
+  const aspect = (typeof window !== "undefined") ? Math.max(1, window.innerWidth / Math.max(1, window.innerHeight)) : 16/9;
+  const vDist = (maxDim * fit) / (2 * Math.tan(fov / 2));
+  const hFov = 2 * Math.atan(Math.tan(fov / 2) * aspect);
+  const hDist = (maxDim * fit) / (2 * Math.tan(hFov / 2));
+  return Math.max(vDist, hDist);
+}
+
+function tweenVec3(v, to, t) {
+  v.set(
+    v.x + (to.x - v.x) * t,
+    v.y + (to.y - v.y) * t,
+    v.z + (to.z - v.z) * t
+  );
+}
+
 
 /**
  * Desktop/Tablet scene ONLY.
@@ -36,9 +74,12 @@ function DesktopConceptScene({ isTablet }) {
   const layout = getConceptLayout({ isMobile, isTablet });
 
   // Assets
-  const rootCluster     = useMemo(() => conceptAssets.find(c => c.id === "cluster-root"), []);
-  const abyssData       = useMemo(() => conceptAssets.find(c => c.id === "cluster-abyss"), []);
-  const earlyAliensData = useMemo(() => conceptAssets.find(c => c.id === "cluster-early-aliens"), []);
+  const rootCluster       = useMemo(() => conceptAssets.find(c => c.id === "cluster-root"), []);
+    const penumbraCluster = useMemo(() => conceptAssets.find(c => c.id === "cluster-penumbra"), []);
+    const lumenData       = useMemo(() => conceptAssets.find(c => c.id === "cluster-lumen"), []);
+    const abyssData       = useMemo(() => conceptAssets.find(c => c.id === "cluster-abyss"), []);
+    const earlyAliensData = useMemo(() => conceptAssets.find(c => c.id === "cluster-early-aliens"), []);
+    const hatsData        = useMemo(() => conceptAssets.find(c => c.id === "cluster-hats"), []);
 
   // UI state
   const [activeClusterId, setActiveClusterId] = useState(null);
@@ -57,6 +98,8 @@ function DesktopConceptScene({ isTablet }) {
     if (controlsRef.current) controlsRef.current.enabled = !!enabled;
   }, []);
 
+
+
   // Overlay openers
   const handleActivate = useCallback((id) => {
     if (!id) return;
@@ -68,87 +111,83 @@ function DesktopConceptScene({ isTablet }) {
     setActiveClusterId(null);
     if (controlsRef.current) controlsRef.current.enabled = true;
   }, []);
-  // =========================================
-// Rule-based framing (targetX + cameraZ)
-// =========================================
-const [framing, setFraming] = useState(() => ({
-  targetX: layout.camera?.target?.[0] ?? 0,
-  camPos:  layout.camera?.position ?? [0, 4, 41],
-}));
-
-const recomputeFraming = useCallback(() => {
-  // 0) viewport + aspect
-  const vw = window.innerWidth || 1280;
-  const vh = window.innerHeight || 800;
-  const aspect = Math.max(0.5, vw / Math.max(1, vh));
-
-  // 1) gutters
-  const gutterPx    = Math.max(COMPOSITION.GUTTER_VW * vw, COMPOSITION.GUTTER_MIN_PX);
-  const contentFrac = Math.max(0.4, (vw - 2 * gutterPx) / vw);
-
-  // 2) spans
-  const cs    = layout.clusters || {};
-  const items = [cs.root, cs.abyss, cs.early].filter(Boolean);
-  const spans = items.map(c => {
-    const x = (c.position?.[0] ?? 0);
-    const w = (c.frameWidth ?? 22);
-    return { left: x - w * 0.5, right: x + w * 0.5 };
-  });
-  const leftX   = Math.min(...spans.map(s => s.left));
-  const rightX  = Math.max(...spans.map(s => s.right));
-  const centerX = (leftX + rightX) * 0.5;
-
-  // 3) root-centric target
-  const rootX   = (cs.root?.position?.[0] ?? 0);
-  const bias    = (COMPOSITION.TARGET_BIAS_TO_ROOT ?? 0.75);
-  const targetX = centerX * (1 - bias) + rootX * bias;
-
-  // 4) FOV + asymmetric fit
-  const vFov = (layout.camera?.fov ?? 44) * Math.PI / 180;
-  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
-  const leftDist  = Math.max(0, targetX - leftX);
-  const rightDist = Math.max(0, rightX - targetX);
-  const maxHalf   = Math.max(leftDist, rightDist);
-  const denom     = Math.tan(hFov / 2) * contentFrac;
-  const requiredZ = maxHalf / Math.max(denom, 1e-3);
-
-  // 5) clamp + commit
-  const clamp = isTablet ? COMPOSITION.CLAMPS.tablet : COMPOSITION.CLAMPS.desktop;
-  const z     = Math.min(clamp.zMax, Math.max(clamp.zMin, requiredZ));
-  const baseY = layout.camera?.position?.[1] ?? 4;
-
-  setFraming({ targetX, camPos: [targetX, baseY, z] });
-
-  // ✅ Debug AFTER everything exists
-  console.log("[compose]", { vw, gutterPx, leftX, rightX, centerX, rootX, targetX, requiredZ, z });
-}, [layout, isTablet]);
 
 
-  useEffect(() => {
-    recomputeFraming();
-    const onResize = () => recomputeFraming();
-    window.addEventListener('resize', onResize, { passive: true });
-    return () => window.removeEventListener('resize', onResize);
-  }, [recomputeFraming]);
+ // Absolute camera: use exactly what conceptsLayout.js describes
+ const [framing] = useState(() => ({
+   target:  layout.camera?.target   ?? [0, -6, 0],
+   camPos:  layout.camera?.position ?? [0, 4, 41],
+   fov:     layout.camera?.fov      ?? 44,
+ }));
 
   // =========================================
 // NEW: viewport scale multiplier
 // - keeps apparent cluster size stable as camera Z changes
 // =========================================
-const baseZ    = layout.camera?.position?.[2] ?? 41;           // 41 desktop, 54 tablet in your layout
-const currentZ = framing.camPos?.[2] ?? baseZ;
-const rawMul   = baseZ / Math.max(1e-3, currentZ);
-const scaleMul = Math.min(1.6, Math.max(0.8, rawMul));         // clamp for sanity
-// NEW: tiny width-based “fill” so size varies even when Z doesn’t
-const w = typeof window !== 'undefined' ? window.innerWidth : 1280;
-const widthMul = Math.min(1.25, Math.max(0.9, w / 1280));
-const scaleMulFinal = scaleMul * widthMul;
+const scaleMulFinal = 1; // keep cluster authoring literal
 // (optional) console to confirm
-console.log('[early][mul]', { scaleMul, widthMul, scaleMulFinal, camZ: currentZ });
+// Focus helper: center + frame a named group (e.g., "Penumbra")
+const focusCluster = useCallback((name, { duration = 450, fit = 1.25 } = {}) => {
+  const scene = controlsRef.current?.object?.parent; // OrbitControls' object is the camera
+  const camera = controlsRef.current?.object;
+  if (!scene || !camera) return;
 
-  return (
-    <section style={{ width: "100%", height: "100vh", background: "black", position: "relative", overflow: "hidden" }}>
-      <Canvas
+  const group = scene.getObjectByName(name);
+  if (!group) {
+    console.warn(`[focusCluster] Group "${name}" not found`);
+    return;
+  }
+
+  // Compute world-space bounding box
+  const box = new THREE.Box3().setFromObject(group);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  // Distance needed to frame the box
+  const dist = frameDistanceForBox({ box, camera, fovDeg: camera.fov, fit });
+
+  // Aim direction: keep current polar angle, move along camera->target ray
+  const startPos = camera.position.clone();
+  const startTarget = controlsRef.current.target.clone();
+
+  const dir = new THREE.Vector3().subVectors(startPos, startTarget).normalize();
+  // new camera position so that camera-target distance == dist
+  const endTarget = center;
+  const endPos = new THREE.Vector3().copy(endTarget).add(dir.multiplyScalar(dist));
+
+  // Animate
+  const t0 = performance.now();
+  const d = Math.max(1, duration);
+  function step(now) {
+    const u = Math.min(1, (now - t0) / d);
+    // ease (smoothstep-ish)
+    const t = u * u * (3 - 2 * u);
+    const curPos = startPos.clone();
+    const curTgt = startTarget.clone();
+    tweenVec3(curPos, endPos, t);
+    tweenVec3(curTgt, endTarget, t);
+    camera.position.copy(curPos);
+    controlsRef.current.target.copy(curTgt);
+    camera.updateProjectionMatrix();
+    controlsRef.current.update();
+    if (u < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}, [controlsRef]);
+
+  // Console helper: window.focusCluster("Penumbra")
+useEffect(() => {
+  window.focusCluster = (name, opts) => focusCluster(name, opts);
+  return () => { try { delete window.focusCluster; } catch {} };
+}, [focusCluster]);
+
+ 
+const lumenLayout = layout?.clusters?.lumen;
+
+
+return (
+<section className="relative h-screen w-full overflow-hidden bg-black">
+        <Canvas
         dpr={[1, Math.min(1.75, window.devicePixelRatio || 1)]}
         gl={{ antialias: !lite, powerPreference: lite ? "low-power" : "high-performance", alpha: false }}
         shadows={false}
@@ -160,7 +199,7 @@ console.log('[early][mul]', { scaleMul, widthMul, scaleMulFinal, camZ: currentZ 
         {/* SIMPLE camera: fov, position; OrbitControls target aims the view */}
         <PerspectiveCamera
           makeDefault
-          fov={layout.camera?.fov ?? 44}
+          fov={framing.fov}
           position={framing.camPos}
           near={0.1}
           far={2000}
@@ -172,8 +211,7 @@ console.log('[early][mul]', { scaleMul, widthMul, scaleMulFinal, camZ: currentZ 
         <OrbitControls
           ref={controlsRef}
           makeDefault
-       // 👇 Rule-based target: X is root-biased; Y/Z as before
-          target={[framing.targetX, (layout.camera?.target?.[1] ?? -6), (layout.camera?.target?.[2] ?? 0)]}
+          target={framing.target}
           enableZoom={false}
           enablePan={false}
           rotateSpeed={0.65}
@@ -200,6 +238,45 @@ console.log('[early][mul]', { scaleMul, widthMul, scaleMulFinal, camZ: currentZ 
             />
           </Suspense>
         )}
+        
+           {penumbraCluster && (
+          <Suspense fallback={null}>
+            <PenumbraCluster
+              id={penumbraCluster.id}
+              images={penumbraCluster.images}
+              layout={penumbraCluster.layout}
+              title={penumbraCluster.title}
+              subtitle={penumbraCluster.subtitle}
+              year={penumbraCluster.year}
+              palette={penumbraCluster.palette}
+              extrusion={penumbraCluster.extrusion}
+              isActive={activeClusterId === penumbraCluster.id}
+              setControlsEnabled={setControlsEnabled}
+              controlsRef={controlsRef}
+              position={layout.clusters.penumbra.position}
+              rotation={layout.clusters.penumbra.rotation}
+              scale={layout.clusters.penumbra.scale || [1, 1, 1]}
+              onActivate={handleActivate}
+                showShadow={false}
+                showFogPad={false}
+            />
+          </Suspense>
+        )}
+          {lumenLayout && (
+            <Suspense fallback={null}>
+              <LumenCluster
+                id="cluster-lumen"
+                position={lumenLayout.position}
+                rotation={lumenLayout.rotation}
+                scale={lumenLayout.scale || [1,1,1]}
+                setControlsEnabled={setControlsEnabled}
+                controlsRef={controlsRef}
+                onActivate={handleActivate}   // LumenCluster will call onActivate("cluster-lumen")
+                visibleSub="all"
+                interactive                   // ← mounts the billboard plane (hover/drag/click)
+              />
+            </Suspense>
+              )}
 
         <Suspense fallback={null}>
           <AbyssCluster
@@ -214,7 +291,25 @@ console.log('[early][mul]', { scaleMul, widthMul, scaleMulFinal, camZ: currentZ 
             onActivate={handleActivate}
           />
         </Suspense>
-
+        {hatsData && (
+          <Suspense fallback={null}>
+            <HatsCluster
+              id="cluster-hats"
+              assets={hatsData.assets ?? []}
+              isActive={activeClusterId === "cluster-hats"}
+              position={layout.clusters.hats.position}
+              rotation={layout.clusters.hats.rotation}
+              baseScale={layout.clusters.hats.baseScale || 3}
+              scaleMul={scaleMulFinal}
+              setControlsEnabled={setControlsEnabled}
+              controlsRef={controlsRef}
+              onActivate={handleActivate}
+              particlesPerGap={14}
+              densityBoost={0.65}
+              screenSpaceOnDesktop
+            />
+          </Suspense>
+        )}
         <Suspense fallback={null}>
           <EarlyAliensCluster
             id="cluster-early-aliens"
@@ -235,17 +330,25 @@ console.log('[early][mul]', { scaleMul, widthMul, scaleMulFinal, camZ: currentZ 
       </Canvas>
 
       {/* Desktop/Tablet overlays */}
-      {activeClusterId && (
-        <Suspense fallback={null}>
-          {activeClusterId === "cluster-abyss" ? (
-            <AbyssOverlay cluster={abyssData} onClose={closeOverlay} />
-          ) : activeClusterId === "cluster-early-aliens" ? (
-            <EarlyAliensOverlay cluster={earlyAliensData} onClose={closeOverlay} />
-          ) : (
-            <RootOverlay cluster={rootCluster} onClose={closeOverlay} />
-          )}
-        </Suspense>
-      )}
+        {activeClusterId && (
+          <Suspense fallback={null}>
+            {
+              activeClusterId === "cluster-lumen" ? (
+                <LumenOverlay onClose={closeOverlay} />
+              ) : activeClusterId === "cluster-abyss" ? (
+                <AbyssOverlay cluster={abyssData} onClose={closeOverlay} />
+              ) : activeClusterId === "cluster-early-aliens" ? (
+                <EarlyAliensOverlay cluster={earlyAliensData} onClose={closeOverlay} />
+              ) : activeClusterId === "cluster-hats" ? (
+                <HatsOverlay cluster={hatsData} onClose={closeOverlay} />
+              ) : activeClusterId === "cluster-penumbra" ? (
+                <PenumbraOverlay cluster={penumbraCluster} onClose={closeOverlay} />
+              ) : (
+                <RootOverlay cluster={rootCluster} onClose={closeOverlay} />
+              )
+            }
+          </Suspense>
+                  )}
 
       {/* Preload mask (desktop/tablet only) */}
       {maskVisible && (

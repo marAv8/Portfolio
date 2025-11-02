@@ -1,3 +1,4 @@
+// latest/src/components/Mobile/MobileCarousel.jsx
 import React from "react";
 import PaginationDots from "../UI/PaginationDots";
 import "./MobileCarousel.css";

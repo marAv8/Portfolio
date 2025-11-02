@@ -14,15 +14,7 @@ export default function Nav({ onContactClick, isConceptPage = false }) {
         >
           {isConceptPage ? 'Home' : 'Concepts'}
         </Link>
-        <a
-          href="https://zora.co/@marav8"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="nav-link glow"
-          style={{ '--delay': '1.1s' }}
-        >
-          Zora
-        </a>
+   
         <button
           onClick={onContactClick}
           className="nav-link glow contact-btn"

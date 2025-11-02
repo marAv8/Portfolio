@@ -3,12 +3,10 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ScreenSizeProvider } from './contexts/ScreenSizeContext';
 import { ModalContext } from './contexts/ModalContext';
-
 import Nav from './components/Navigation/Nav';
 import ContactModal from './components/ContactInfo/ContactModal';
-
-// EAGER: keep landing scene as a normal import
 import CanvasScene from './components/LandingPage/CanvasScene';
+import './App.css';
 
 // LAZY: split the heavy concepts scene
 const ConceptScene = React.lazy(() =>
@@ -16,19 +14,17 @@ const ConceptScene = React.lazy(() =>
     .then(m => ({ default: m.default ?? m.ConceptScene }))
 );
 
-import './App.css';
 
 function AppContent() {
   const location = useLocation();
   const [showContact, setShowContact] = useState(false);
   const [startAssetAnimation, setStartAssetAnimation] = useState(false);
-
   const isConceptPage = location.pathname === '/concepts';
 
   useEffect(() => {
     const t = setTimeout(() => setStartAssetAnimation(true), 2500);
     return () => clearTimeout(t);
-  }, []);
+    }, []);
 
   return (
     <ModalContext.Provider value={showContact}>

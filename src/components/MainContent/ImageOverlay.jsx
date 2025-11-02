@@ -2,13 +2,39 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useTexture, useVideoTexture } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
+import { useScreenSize } from '../../contexts/ScreenSizeContext';
 
 /** Image face (writes depth, sits in front of the panel box) */
 function ImageFace({ url, width, height, alphaCutoff, z }) {
   const map = useTexture(url);
-    useMemo(() => {
-    if (map) map.colorSpace = THREE.SRGBColorSpace;
-  }, [map]);
+  const { isMobile } = useScreenSize();
+  const gl = useThree((state) => state.gl);
+  const maxAnisotropy = useMemo(() => {
+    const caps = gl?.capabilities;
+    return typeof caps?.getMaxAnisotropy === 'function' ? caps.getMaxAnisotropy() : 1;
+  }, [gl]);
+
+  useMemo(() => {
+    if (!map) return;
+    map.colorSpace = THREE.SRGBColorSpace;
+    if (isMobile) {
+      map.generateMipmaps = true;
+      map.minFilter = THREE.LinearMipmapLinearFilter;
+      map.magFilter = THREE.LinearFilter;
+      const safeMax = Math.max(1, maxAnisotropy || 1);
+      map.anisotropy = Math.min(safeMax, 6);
+    } else {
+      map.generateMipmaps = true;
+      map.minFilter = THREE.LinearMipmapLinearFilter;
+      map.magFilter = THREE.LinearFilter;
+      if (maxAnisotropy) {
+        map.anisotropy = Math.max(1, Math.min(maxAnisotropy, 8));
+      }
+    }
+    map.needsUpdate = true;
+  }, [map, isMobile, maxAnisotropy]);
+
   return (
     <mesh renderOrder={50} position={[0, 0, z]}>
       <planeGeometry args={[width, height]} />
@@ -28,9 +54,12 @@ function ImageFace({ url, width, height, alphaCutoff, z }) {
 /** Video face using drei’s useVideoTexture (no alpha cutout) */
 function VideoFace({ url, width, height, z }) {
   const tex = useVideoTexture(url, { loop: true, muted: true, start: true });
-    useMemo(() => {
-    if (tex) tex.colorSpace = THREE.SRGBColorSpace;
+  useMemo(() => {
+    if (!tex) return;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
   }, [tex]);
+
   return (
     <mesh renderOrder={50} position={[0, 0, z]}>
       <planeGeometry args={[width, height]} />

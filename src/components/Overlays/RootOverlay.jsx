@@ -12,12 +12,19 @@ export default function RootOverlay({ cluster, onClose }) {
   const { isMobile, isTablet } = useScreenSize();
     // Normalize URLs once for consistent length/total
     const deg = (d) => THREE.MathUtils.degToRad(d);
-  const urls = React.useMemo(() => {
+  const visibleImages = React.useMemo(() => {
     const arr = cluster?.images ?? [];
-    return arr
+    return arr.filter((item) => {
+      if (!item) return false;
+      if (typeof item === "string") return true;
+      return !item.hidden;
+    });
+  }, [cluster]);
+  const urls = React.useMemo(() => {
+    return visibleImages
       .map((it) => (typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null))
       .filter(Boolean);
-  }, [cluster]);
+  }, [visibleImages]);
 
   // Shared index + wrap for desktop/tablet
   const [index, setIndex] = React.useState(0);
@@ -103,7 +110,7 @@ export default function RootOverlay({ cluster, onClose }) {
           />
         </div>
 
-        <ClusterCarousel images={cluster.images} onClose={onClose} />
+        <ClusterCarousel images={visibleImages} onClose={onClose} />
       </div>
     );
   }
@@ -150,8 +157,8 @@ export default function RootOverlay({ cluster, onClose }) {
               year={cluster?.year}
               isActive={true}                 // disable hit areas inside overlay
               preferHiRes={true}
-              position={[0, -3, 0]}         // <<< explicit position (like Abyss/Early)
-              rotation={[deg(0), deg(0), 0]}
+              position={[0, -5, 0]}         // <<< explicit position (like Abyss/Early)
+              rotation={[deg(-5), deg(0), 0]}
               scale={
                 Array.isArray(scale)
                   ? [scale[0], scale[0], scale[0]]
@@ -177,7 +184,7 @@ export default function RootOverlay({ cluster, onClose }) {
       >
                 {/* Controlled on desktop/tablet so arrows & drag stay in sync */}
         <ClusterCarousel
-          images={cluster.images}
+          images={visibleImages}
           index={wrap(index)}
           onIndexChange={setIndex}
           onClose={onClose}

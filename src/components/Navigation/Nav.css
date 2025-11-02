@@ -35,6 +35,7 @@
     0 0 8px rgba(255, 255, 255, 1),
     0 0 20px rgba(255, 255, 255, 0.855),
     0 0 30px rgba(255, 255, 255, 0.735);
+  filter: none;
 }
 
 .nav-link.placeholder {
@@ -56,8 +57,9 @@
   border-radius: 12px;
   padding: 1.2rem 1.8rem;
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(0, 0, 0, 0.2);
+  0 12px 30px rgba(0, 0, 0, 0.6),
+  0 8px 20px rgba(0, 0, 0, 0.4),
+  inset 0 0 8px rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -134,25 +136,7 @@
   }
 }
 
-/* Desktop: top-center horizontal layout */
-/* @media (min-width: 1025px) {
-  .nav-container {
-    top: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    flex-direction: row;
-    gap: 1.5rem;
-  }
 
-  .nav-bg {
-    flex-direction: row;
-    justify-content: center;
-    border-radius: 999px;
-    padding: 0.8rem 2rem;
-    gap: 1.5rem;
-  }
-} */
-/* === Layout: Desktop Column (Landing) vs Row (Concepts) === */
 .nav-container.side-column {
   position: fixed;
   top: 50%;
@@ -193,18 +177,9 @@
 /* Make glow pop on mobile: reinforce with drop-shadow and antialiasing */
 @media (max-width: 480px) {
   .nav-link.glow {
-    /* keep the original text-shadow, but strengthen a bit */
-    text-shadow:
-      0 0 8px rgba(255, 255, 255, 1),
-      0 0 24px rgba(255, 255, 255, 0.9),
-      0 0 36px rgba(255, 255, 255, 0.8);
-
-    /* extra pass that mobile Safari/Chrome respect more reliably */
-    filter:
-      drop-shadow(0 0 6px rgba(255,255,255,0.9))
-      drop-shadow(0 0 14px rgba(255,255,255,0.7));
-
-    /* improve text rendering on WebKit */
+    /* glow disabled on mobile for perf */
+    text-shadow: none;
+    filter: none;
     -webkit-font-smoothing: antialiased;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
@@ -239,5 +214,3 @@
     will-change: filter, text-shadow;
   }
 }
-
-
