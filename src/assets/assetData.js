@@ -276,6 +276,7 @@ export const conceptAssets = [
   },
   {
     id: 'cluster-abyss',
+    flickerColor: '#d32f2f',
     label: 'Abyss',
     title: 'Abyss',
     year: '2023',

@@ -25,6 +25,7 @@ export default function AbyssCluster({
   debugAxes = false,
   setControlsEnabled = () => {},
   controlsRef,
+  onReady,
 }) {
   const { isMobile, isTablet } = useScreenSize?.() ?? { isMobile:false, isTablet:false };
   const isDesktop = !isMobile && !isTablet;
@@ -59,6 +60,15 @@ const TAP_SCROLL_PX = 8;   // page scroll guard
     if (registerRef) registerRef(id, groupRef.current);
     return () => registerRef && registerRef(id, null);
   }, [id, registerRef]);
+
+  // signal ready once mounted (after suspense resolves)
+  const readyOnceRef = useRef(false);
+  useEffect(() => {
+    if (!readyOnceRef.current) {
+      readyOnceRef.current = true;
+      if (typeof onReady === 'function') onReady(id);
+    }
+  }, [onReady, id]);
 
   const BASE  = useMemo(() => [baseScale, baseScale, baseScale], [baseScale]);
   const HOVER = 1.06;
