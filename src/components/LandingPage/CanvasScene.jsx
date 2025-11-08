@@ -23,6 +23,7 @@ export default function CanvasScene({ modalOpen = false }) {
   const [isMobile, setIsMobile] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const [lite, setLite] = useState(false); // auto "lite" mode if perf drops
+  const [globalHintVisible, setGlobalHintVisible] = useState(true);
 
   useEffect(() => {
     const updateSize = () => setIsMobile(window.innerWidth <= 768);
@@ -62,6 +63,9 @@ export default function CanvasScene({ modalOpen = false }) {
             shadows={false}
             className="landing-canvas"
             style={{ background: 'black' }}
+            onPointerDown={() => {
+              if (globalHintVisible) setGlobalHintVisible(false);
+            }}
           >
             {/* Auto-detect slow devices: lower DPR and flip lite=true when FPS dips */}
             <PerformanceMonitor onDecline={() => setLite(true)} />
@@ -93,6 +97,11 @@ export default function CanvasScene({ modalOpen = false }) {
             </Suspense>
           </Canvas>
         </ModalContext.Provider>
+        {globalHintVisible && (
+          <div className="canvas-global-hint-chip">
+            Click &amp; drag to view
+          </div>
+        )}
       </div>
     </div>
   );

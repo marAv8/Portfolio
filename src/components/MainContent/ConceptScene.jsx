@@ -36,7 +36,7 @@ const AbyssOverlay       = React.lazy(() => import("../Overlays/AbyssOverlay"));
 const EarlyAliensOverlay = React.lazy(() => import("../Overlays/EarlyAliensOverlay"));
 const HatsOverlay        = React.lazy(() => import("../Overlays/HatsOverlay"));
 
-const DEFAULT_HINT_LINES = ["Click & drag to explore", "Click to open"];
+const DEFAULT_HINT_LINES = ["Click & drag to view", "Click to open"];
 const LABEL_CONFIG = {
   root: { offset: [14, 9, 0], align: "left" },
   penumbra: { offset: [-14, 9, 0], align: "right" },
@@ -294,8 +294,6 @@ useEffect(() => {
 
  
 const lumenLayout = layout?.clusters?.lumen;
-
-
 return (
 <section className="relative h-screen w-full overflow-hidden bg-black">
         <Canvas

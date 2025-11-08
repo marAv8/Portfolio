@@ -45,6 +45,24 @@
   z-index: 0;
 }
 
+.canvas-global-hint-chip {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.65rem 1.8rem;
+  border-radius: 999px;
+  background: rgba(12, 12, 12, 0.85);
+  color: #fefcf6;
+  font-size: 0.95rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* Mobile: stack nav on top, canvas below */
 @media (max-width: 768px) {
   .landing-layout {
