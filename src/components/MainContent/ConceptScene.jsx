@@ -10,7 +10,7 @@ import React, {
   useCallback,
 } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, AdaptiveDpr, PerformanceMonitor, Html } from "@react-three/drei";
 
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
 import { getConceptLayout, COMPOSITION } from "../../config/conceptsLayout";
@@ -35,6 +35,22 @@ const LumenOverlay       = React.lazy(() => import("../Overlays/LumenOverlay"));
 const AbyssOverlay       = React.lazy(() => import("../Overlays/AbyssOverlay"));
 const EarlyAliensOverlay = React.lazy(() => import("../Overlays/EarlyAliensOverlay"));
 const HatsOverlay        = React.lazy(() => import("../Overlays/HatsOverlay"));
+
+const DEFAULT_HINT_TEXT = "Click & drag to explore";
+const LABEL_CONFIG = {
+  root: { offset: [14, 9, 0], align: "left" },
+  penumbra: { offset: [-14, 9, 0], align: "right" },
+  lumen: { offset: [12, -2, 0], align: "left" },
+  abyss: { offset: [-12, -4, 0], align: "right" },
+  hats: { offset: [0, 10, 0], align: "center" },
+  early: { offset: [0, 10, 0], align: "center" },
+};
+
+const addVec = (a = [0, 0, 0], b = [0, 0, 0]) => [
+  (a[0] ?? 0) + (b[0] ?? 0),
+  (a[1] ?? 0) + (b[1] ?? 0),
+  (a[2] ?? 0) + (b[2] ?? 0),
+];
 
 console.log({
   LumenOverlay, LumenCluster,
@@ -81,9 +97,48 @@ function DesktopConceptScene({ isTablet }) {
     const earlyAliensData = useMemo(() => conceptAssets.find(c => c.id === "cluster-early-aliens"), []);
     const hatsData        = useMemo(() => conceptAssets.find(c => c.id === "cluster-hats"), []);
 
+  const clusterHints = useMemo(() => {
+    const entries = [];
+    const pushEntry = (key, info) => {
+      if (!info) return;
+      const layoutNode = layout?.clusters?.[key];
+      if (!layoutNode?.position) return;
+      const label = LABEL_CONFIG[key] || { offset: [0, 8, 0], align: "center" };
+      entries.push({
+        id: info.id,
+        title: info.title || info.id,
+        subtitle: info.subtitle,
+        year: info.year,
+        position: addVec(layoutNode.position, label.offset),
+        align: label.align || "center",
+        hint: DEFAULT_HINT_TEXT,
+      });
+    };
+
+    pushEntry("root", rootCluster);
+    pushEntry("penumbra", penumbraCluster);
+    pushEntry("lumen", lumenData);
+    pushEntry("abyss", abyssData);
+    pushEntry("hats", hatsData);
+    pushEntry("early", earlyAliensData);
+    return entries;
+  }, [layout, rootCluster, penumbraCluster, lumenData, abyssData, hatsData, earlyAliensData]);
+
   // UI state
   const [activeClusterId, setActiveClusterId] = useState(null);
   const [lite, setLite] = useState(false);
+  const [hoveredClusterId, setHoveredClusterId] = useState(null);
+
+  useEffect(() => {
+    if (!hoveredClusterId) return;
+    if (!clusterHints.some((entry) => entry.id === hoveredClusterId)) {
+      setHoveredClusterId(null);
+    }
+  }, [hoveredClusterId, clusterHints]);
+
+  useEffect(() => {
+    if (activeClusterId) setHoveredClusterId(null);
+  }, [activeClusterId]);
 
   // Desktop-only preload mask (kept simple)
   const [maskVisible, setMaskVisible] = useState(true);
@@ -97,6 +152,57 @@ function DesktopConceptScene({ isTablet }) {
   const setControlsEnabled = useCallback((enabled) => {
     if (controlsRef.current) controlsRef.current.enabled = !!enabled;
   }, []);
+
+  const updateHover = useCallback((clusterId, hovering) => {
+    if (!clusterId) return;
+    setHoveredClusterId((prev) => {
+      if (hovering) return clusterId;
+      return prev === clusterId ? null : prev;
+    });
+  }, []);
+
+  const createHoverHandler = useCallback(
+    (clusterId) => {
+      if (!clusterId) return undefined;
+      return (arg1, arg2) => {
+        const resolvedId =
+          typeof arg1 === "string" && typeof arg2 === "boolean" ? arg1 : clusterId;
+        const hovering =
+          typeof arg2 === "boolean"
+            ? arg2
+            : typeof arg1 === "boolean"
+            ? arg1
+            : !!arg1;
+        updateHover(resolvedId, hovering);
+      };
+    },
+    [updateHover]
+  );
+
+  const rootHoverHandler = useMemo(
+    () => (rootCluster ? createHoverHandler(rootCluster.id) : undefined),
+    [rootCluster, createHoverHandler]
+  );
+  const penumbraHoverHandler = useMemo(
+    () => (penumbraCluster ? createHoverHandler(penumbraCluster.id) : undefined),
+    [penumbraCluster, createHoverHandler]
+  );
+  const lumenHoverHandler = useMemo(
+    () => (lumenData ? createHoverHandler(lumenData.id) : undefined),
+    [lumenData, createHoverHandler]
+  );
+  const abyssHoverHandler = useMemo(
+    () => (abyssData ? createHoverHandler(abyssData.id) : undefined),
+    [abyssData, createHoverHandler]
+  );
+  const hatsHoverHandler = useMemo(
+    () => (hatsData ? createHoverHandler(hatsData.id) : undefined),
+    [hatsData, createHoverHandler]
+  );
+  const earlyHoverHandler = useMemo(
+    () => (earlyAliensData ? createHoverHandler(earlyAliensData.id) : undefined),
+    [earlyAliensData, createHoverHandler]
+  );
 
 
 
@@ -119,6 +225,11 @@ function DesktopConceptScene({ isTablet }) {
    camPos:  layout.camera?.position ?? [0, 4, 41],
    fov:     layout.camera?.fov      ?? 44,
  }));
+
+  const visibleHint = !activeClusterId && hoveredClusterId
+    ? clusterHints.find((entry) => entry.id === hoveredClusterId)
+    : null;
+  const hintDistance = isTablet ? 26 : 34;
 
   // =========================================
 // NEW: viewport scale multiplier
@@ -235,6 +346,7 @@ return (
               rotation={layout.clusters.root.rotation}
               scale={layout.clusters.root.scale || [1, 1, 1]}
               onActivate={handleActivate}
+              onHoverChange={rootHoverHandler}
             />
           </Suspense>
         )}
@@ -259,6 +371,7 @@ return (
               onActivate={handleActivate}
                 showShadow={false}
                 showFogPad={false}
+              onHoverChange={penumbraHoverHandler}
             />
           </Suspense>
         )}
@@ -274,6 +387,7 @@ return (
                 onActivate={handleActivate}   // LumenCluster will call onActivate("cluster-lumen")
                 visibleSub="all"
                 interactive                   // ← mounts the billboard plane (hover/drag/click)
+                onHoverChange={lumenHoverHandler}
               />
             </Suspense>
               )}
@@ -289,6 +403,7 @@ return (
             setControlsEnabled={setControlsEnabled}
             controlsRef={controlsRef}
             onActivate={handleActivate}
+            onHoverChange={abyssHoverHandler}
           />
         </Suspense>
         {hatsData && (
@@ -307,6 +422,7 @@ return (
               particlesPerGap={14}
               densityBoost={0.65}
               screenSpaceOnDesktop
+              onHoverChange={hatsHoverHandler}
             />
           </Suspense>
         )}
@@ -325,8 +441,29 @@ return (
             particlesPerGap={14} 
             densityBoost={0.65}
             screenSpaceOnDesktop
+            onHoverChange={earlyHoverHandler}
           />
         </Suspense>
+
+        {visibleHint && (
+          <Html
+            transform
+            position={visibleHint.position}
+            distanceFactor={hintDistance}
+            wrapperClass={`concept-hint-wrapper concept-hint-wrapper--${visibleHint.align}`}
+          >
+            <div className={`concept-hint concept-hint--${visibleHint.align}`}>
+              <p className="concept-hint__title">{visibleHint.title}</p>
+              {visibleHint.subtitle ? (
+                <p className="concept-hint__subtitle">{visibleHint.subtitle}</p>
+              ) : null}
+              {visibleHint.year ? (
+                <p className="concept-hint__year">{visibleHint.year}</p>
+              ) : null}
+              <p className="concept-hint__hint">{visibleHint.hint}</p>
+            </div>
+          </Html>
+        )}
       </Canvas>
 
       {/* Desktop/Tablet overlays */}

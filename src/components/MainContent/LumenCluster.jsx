@@ -20,6 +20,7 @@ export default function LumenCluster({
   controlsRef,                // kept for parity with Abyss signature
   onActivate = () => {},
   visibleSub = "all",         // "earth" | "moon" | "space" | "all"
+  onHoverChange = () => {},
   interactive = false,        // enable Abyss-style main hit plane
   subHitplanes = false,       // optional tiny per-sub hit planes (off by default)
 }) {
@@ -37,6 +38,9 @@ export default function LumenCluster({
 
   const [hovered, setHovered] = useState(false);
   useCursor(hovered);
+  useEffect(() => {
+    onHoverChange?.(id, hovered);
+  }, [hovered, id, onHoverChange]);
 
   const space = useMemo(() => getLumenSubset("space"), []);
   const moon  = useMemo(() => getLumenSubset("moon"),  []);

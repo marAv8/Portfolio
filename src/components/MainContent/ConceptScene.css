@@ -27,3 +27,63 @@
   -ms-touch-action: pan-y !important; /* legacy */
 }
 /* tablet band: keep a fixed stage width, center it */
+
+.concept-hint-wrapper {
+  pointer-events: none;
+}
+
+.concept-hint {
+  min-width: 220px;
+  padding: 0.85rem 1.2rem;
+  border-radius: 999px;
+  background: rgba(8, 8, 8, 0.8);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  color: #f5f1e8;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.concept-hint--left {
+  text-align: left;
+  align-items: flex-start;
+}
+.concept-hint--right {
+  text-align: right;
+  align-items: flex-end;
+}
+.concept-hint--center {
+  text-align: center;
+  align-items: center;
+}
+
+.concept-hint__title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.concept-hint__subtitle {
+  margin: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  color: rgba(245, 241, 232, 0.75);
+}
+
+.concept-hint__year {
+  margin: 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  color: rgba(245, 241, 232, 0.65);
+}
+
+.concept-hint__hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.28em;
+  color: rgba(255, 255, 255, 0.9);
+}

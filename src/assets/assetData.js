@@ -1,5 +1,5 @@
 import { abyssAssets, earlyAliensAssets, penumbraAssets } from './assetsLeft';
-import { hatsAssets } from './assetsRight';
+import { hatsAssets, getLumenAll } from './assetsRight';
 // Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
 const toVariantUrls = (url) => {
   if (typeof url !== 'string') return { thumb: url, full: url };
@@ -243,6 +243,14 @@ export const conceptAssets = [
       ...digitalStones,
       ...digitalStonesB,
     ],
+  },
+  {
+    id: 'cluster-lumen',
+    title: 'Lumen',
+    subtitle: 'Surveillance, astral echoes, orb landscapes',
+    year: '2024',
+    label: 'Lumen',
+    images: getLumenAll(),
   },
   {
     id: 'cluster-penumbra',
