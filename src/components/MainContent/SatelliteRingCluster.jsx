@@ -436,13 +436,14 @@ const particleSprite = useMemo(() => {
   const panelColorObj    = useMemo(() => new THREE.Color('#0F141A'), []);
   const panelEmissiveObj = useMemo(() => new THREE.Color('#A8B7C7'), []);
 
-  const HIT_RADIUS = R + Math.max(pw, ph) * 1.25;
-  const HIT_HEIGHT = ph * 2.2;
+  const HOVER_PAD  = Math.max(pw, ph) * 1.9;
+  const HIT_RADIUS = R + HOVER_PAD;
+  const HIT_HEIGHT = ph * 3.4 + HOVER_PAD * 0.6;
 
-  const BB_WIDTH   = 2 * (R + pw * 1.15);
-  const BB_HEIGHT  = ph * 3.0;
-  const BB_OFFSET  = 2.4;
-  const BB_LIFT_Y  = ph * 0.8;
+  const BB_WIDTH   = 2 * (R + HOVER_PAD * 0.9);
+  const BB_HEIGHT  = ph * 3.6 + HOVER_PAD * 0.4;
+  const BB_OFFSET  = 2.8 + HOVER_PAD * 0.15;
+  const BB_LIFT_Y  = ph * 1.1;
 
   return (
     <a.group ref={ringRef} position={position} rotation={rotation} scale={s.to(v => [v, v, v])}>

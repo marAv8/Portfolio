@@ -178,21 +178,25 @@ const boostedForMobile = useMemo(() => {
   // ─────────────────────────────────────────────────────────────
   // Billboard hit plane (for drag / click)
   // ─────────────────────────────────────────────────────────────
-  const BASE_RADIUS  = 6.2;
-  const HIT_PAD_X    = 2.4;
-  const HIT_PAD_Y    = 3.8;
-  const PLANE_W      = 2 * (BASE_RADIUS + HIT_PAD_X);
-  const PLANE_H      = 2 * (BASE_RADIUS * 0.85 + HIT_PAD_Y);
-  const PLANE_OFFSET = 1.25;
+const BASE_RADIUS  = 6.2;
+const HIT_PAD_X    = 2.4;
+const HIT_PAD_Y    = 3.8;
+const DEFAULT_PLANE_W      = 2 * (BASE_RADIUS + HIT_PAD_X);
+const DEFAULT_PLANE_H      = 2 * (BASE_RADIUS * 0.85 + HIT_PAD_Y);
+const PLANE_OFFSET = 1.25;
 
-  const tmpWorld = useMemo(() => new THREE.Vector3(), []);
-  const tmpDir   = useMemo(() => new THREE.Vector3(), []);
-  const tmpPos   = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ camera }) => {
-    const g = groupRef.current, p = planeRef.current;
-    if (!g || !p) return;
-    g.updateWorldMatrix(true, false);
-    tmpWorld.setFromMatrixPosition(g.matrixWorld);
+const tmpWorld = useMemo(() => new THREE.Vector3(), []);
+const tmpDir   = useMemo(() => new THREE.Vector3(), []);
+const tmpPos   = useMemo(() => new THREE.Vector3(), []);
+const tmpBox   = useMemo(() => new THREE.Box3(), []);
+const tmpSize  = useMemo(() => new THREE.Vector3(), []);
+const tmpScale = useMemo(() => new THREE.Vector3(), []);
+const [planeScale, setPlaneScale] = useState([DEFAULT_PLANE_W, DEFAULT_PLANE_H]);
+useFrame(({ camera }) => {
+  const g = groupRef.current, p = planeRef.current;
+  if (!g || !p) return;
+  g.updateWorldMatrix(true, false);
+  tmpWorld.setFromMatrixPosition(g.matrixWorld);
     tmpDir.copy(camera.position).sub(tmpWorld).normalize();
     const planeWorldPos = tmpPos.copy(tmpWorld).addScaledVector(tmpDir, PLANE_OFFSET);
     const localPlanePos = g.worldToLocal(planeWorldPos.clone());
@@ -252,7 +256,7 @@ const ringRadiusB = 0.62;
       {!isActive && (
         <mesh
           ref={planeRef}
-          scale={[PLANE_W, PLANE_H, 1]}
+          scale={[planeScale[0], planeScale[1], 1]}
           frustumCulled={false}
           renderOrder={9999}
           onPointerOver={(e) => {
@@ -423,3 +427,20 @@ const ringRadiusB = 0.62;
     </a.group>
   );
 }
+  useEffect(() => {
+    const visuals = visualsRef.current;
+    const group = groupRef.current;
+    if (!visuals || !group) return;
+    group.updateWorldMatrix(true, true);
+    tmpBox.setFromObject(visuals);
+    tmpBox.getSize(tmpSize);
+    group.getWorldScale(tmpScale);
+    const width = (tmpSize.x / (tmpScale.x || 1)) + 2.4;
+    const height = (tmpSize.y / (tmpScale.y || 1)) + 2.2;
+    const clampedWidth = Math.min(28, Math.max(8, width));
+    const clampedHeight = Math.min(24, Math.max(6, height));
+    setPlaneScale((prev) => {
+      if (Math.abs(prev[0] - clampedWidth) < 0.1 && Math.abs(prev[1] - clampedHeight) < 0.1) return prev;
+      return [clampedWidth, clampedHeight];
+    });
+  }, [resolvedImages, enableStones, isMobile]);
