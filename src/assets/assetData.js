@@ -247,7 +247,7 @@ export const conceptAssets = [
   {
     id: 'cluster-lumen',
     title: 'Lumen',
-    subtitle: 'Surveillance, astral echoes, orb landscapes',
+    subtitle: 'Surveillance and astral echoes',
     year: '2024',
     label: 'Lumen',
     images: getLumenAll(),

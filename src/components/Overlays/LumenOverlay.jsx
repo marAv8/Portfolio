@@ -54,7 +54,7 @@ export default function LumenOverlay({ onClose }) {
     id: "cluster-lumen",
     title: "Lumen",
     year: "2024",
-    subtitle: "Surveillance, and astral echoes.",
+    subtitle: "Surveillance and astral echoes",
   };
 
   if (isMobile) {

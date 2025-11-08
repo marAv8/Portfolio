@@ -54,6 +54,8 @@
   border: none;
   z-index: 10;
   cursor: pointer;
+  padding: 0.35rem 0.6rem;
+  line-height: 1;
 }
 
 /* Navigation arrows (rendered always; hidden on small screens via media queries) */
