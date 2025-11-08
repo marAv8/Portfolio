@@ -36,7 +36,7 @@ const AbyssOverlay       = React.lazy(() => import("../Overlays/AbyssOverlay"));
 const EarlyAliensOverlay = React.lazy(() => import("../Overlays/EarlyAliensOverlay"));
 const HatsOverlay        = React.lazy(() => import("../Overlays/HatsOverlay"));
 
-const DEFAULT_HINT_TEXT = "Click & drag to explore";
+const DEFAULT_HINT_LINES = ["Click & drag to explore", "Click to open"];
 const LABEL_CONFIG = {
   root: { offset: [14, 9, 0], align: "left" },
   penumbra: { offset: [-14, 9, 0], align: "right" },
@@ -111,7 +111,7 @@ function DesktopConceptScene({ isTablet }) {
         year: info.year,
         position: addVec(layoutNode.position, label.offset),
         align: label.align || "center",
-        hint: DEFAULT_HINT_TEXT,
+        hintLines: DEFAULT_HINT_LINES,
       });
     };
 
@@ -460,7 +460,15 @@ return (
               {visibleHint.year ? (
                 <p className="concept-hint__year">{visibleHint.year}</p>
               ) : null}
-              <p className="concept-hint__hint">{visibleHint.hint}</p>
+              {Array.isArray(visibleHint.hintLines)
+                ? visibleHint.hintLines.map((line, idx) => (
+                    <p key={idx} className="concept-hint__hint">
+                      {line}
+                    </p>
+                  ))
+                : (
+                    <p className="concept-hint__hint">{visibleHint.hintLines || visibleHint.hint}</p>
+                  )}
             </div>
           </Html>
         )}
