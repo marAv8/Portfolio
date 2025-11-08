@@ -147,7 +147,6 @@ export default function PenumbraCluster({
           renderOrder={9999}
           onPointerOver={(e) => {
             e.stopPropagation();
-            if (!isInsideEllipse(e)) return;
             if (!hovered) { setHovered(true); onHoverChange?.(id, true); }
             document.body.style.cursor = "pointer";
           }}
