@@ -245,6 +245,24 @@ const ringCenterB = [ 0.9, 0.52, 1.5];
 const ringRadiusA = 0.62;
 const ringRadiusB = 0.62;
 
+  useEffect(() => {
+    const visuals = visualsRef.current;
+    const group = groupRef.current;
+    if (!visuals || !group) return;
+    group.updateWorldMatrix(true, true);
+    tmpBox.setFromObject(visuals);
+    tmpBox.getSize(tmpSize);
+    group.getWorldScale(tmpScale);
+    const width = (tmpSize.x / (tmpScale.x || 1)) + 2.4;
+    const height = (tmpSize.y / (tmpScale.y || 1)) + 2.2;
+    const clampedWidth = Math.min(28, Math.max(8, width));
+    const clampedHeight = Math.min(24, Math.max(6, height));
+    setPlaneScale((prev) => {
+      if (Math.abs(prev[0] - clampedWidth) < 0.1 && Math.abs(prev[1] - clampedHeight) < 0.1) return prev;
+      return [clampedWidth, clampedHeight];
+    });
+  }, [resolvedImages, enableStones, isMobile]);
+
   // Split imagery
 
   // ─────────────────────────────────────────────────────────────
@@ -427,20 +445,3 @@ const ringRadiusB = 0.62;
     </a.group>
   );
 }
-  useEffect(() => {
-    const visuals = visualsRef.current;
-    const group = groupRef.current;
-    if (!visuals || !group) return;
-    group.updateWorldMatrix(true, true);
-    tmpBox.setFromObject(visuals);
-    tmpBox.getSize(tmpSize);
-    group.getWorldScale(tmpScale);
-    const width = (tmpSize.x / (tmpScale.x || 1)) + 2.4;
-    const height = (tmpSize.y / (tmpScale.y || 1)) + 2.2;
-    const clampedWidth = Math.min(28, Math.max(8, width));
-    const clampedHeight = Math.min(24, Math.max(6, height));
-    setPlaneScale((prev) => {
-      if (Math.abs(prev[0] - clampedWidth) < 0.1 && Math.abs(prev[1] - clampedHeight) < 0.1) return prev;
-      return [clampedWidth, clampedHeight];
-    });
-  }, [resolvedImages, enableStones, isMobile]);
