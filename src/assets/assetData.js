@@ -1,5 +1,6 @@
 import { abyssAssets, earlyAliensAssets, penumbraAssets } from './assetsLeft';
 import { hatsAssets, getLumenAll } from './assetsRight';
+
 // Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
 const toVariantUrls = (url) => {
   if (typeof url !== 'string') return { thumb: url, full: url };
@@ -39,7 +40,7 @@ const rawAssets = [
   { url: '/media/aya3.png', size: [60, 84] },
   { url: '/media/moon.png', size: [55, 45], manualPosition: [0, -100, -200] },
   { url: '/media/bougHeadP.png', size: [50, 90] },
-  { url: '/media/orchidPearl.png', size: [50, 50] },
+  // { url: '/media/orchidPearl.png', size: [50, 50] },
   { url: '/media/OrientalTropicCastle.png', size: [20, 20], manualPosition: [-150, -100, -300] },
   { url: '/media/decimA.png', size: [40, 40] },
   { url: '/media/MuseHalo.jpg', size: [50, 50] },
@@ -291,7 +292,7 @@ export const conceptAssets = [
     subtitle: 'Study in red light and mirrored forms',
     position: [-3, -1, -2],
     scale: [1, 1, 1],
-    images: abyssAssets,  // ✅ good
+    images: abyssAssets,  
   },
   {
     id: 'cluster-hats',
@@ -299,7 +300,6 @@ export const conceptAssets = [
     title: 'Headpieces & Hats',
     year: '2023',
     subtitle: 'Variations of hats/coverings',
-    // SatelliteRingCluster expects `assets` (like Early Aliens)
     assets: hatsAssets,
   },
 {
@@ -309,13 +309,13 @@ export const conceptAssets = [
   subtitle: 'MJ v3 portrait artifacts, 13-panel ring',
   year: '2022',
   scale: [1,1,1],
-  assets: earlyAliensAssets,   // ✅ keep as "assets"
+  assets: earlyAliensAssets,  
 }
 ];
 export const penumbraData = {
   id: "penumbra",
   colors: {
-    bgStart: "#E7DBF1", // lilac (disk)
+    bgStart: "#E7DBF1", 
     bgMid:   "#D6D1D2",
     bgEnd:   "#595556",
     tint:    "#9C9690",

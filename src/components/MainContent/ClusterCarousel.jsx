@@ -1,71 +1,74 @@
-// src/components/MainContent/ClusterCarousel.jsx
-import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import "./ClusterCarousel.css";
 import PaginationDots from "../UI/PaginationDots";
-import { useScreenSize } from "../../contexts/ScreenSizeContext";
 
-/**
- * Controlled/uncontrolled carousel:
- * - If `index` prop is provided => controlled. Use `onIndexChange` to update.
- * - Else it manages its own index, seeded by `startIndex`.
- * Supports drag/swipe, infinite loop (forward/back).
- */
 export default function ClusterCarousel({
-  images = [],           // array of strings or { url/src/image/path }
-  startIndex = 0,        // only used when UNcontrolled
-  index: controlled,     // controlled index (optional)
-  onIndexChange,         // called whenever active index changes (with wrapped idx)
-  onClose,               // close handler (optional)
+  images = [],
+  startIndex = 0,
+  index: controlled,
+  onIndexChange,
+  onClose,
 }) {
-const entries = useMemo(() => {
-  const list = Array.isArray(images) ? images : [];
-  return list
-    .filter((item) => {
-      if (!item) return false;
-      if (typeof item === "string") return true;
-      return !item.hidden;
-    })
-    .map((item) => {
-      if (typeof item === "string") {
-        return {
-          src: item,
-          isVideo: /\.(mp4|webm)(\?.*)?$/i.test(item),
-          poster: undefined,
-        };
-      }
-      const src = item.full || item.url || item.src || item.image || item.path || null;
-      const isVideo =
-        item.type === "video" || (typeof src === "string" && /\.(mp4|webm)(\?.*)?$/i.test(src));
-      return {
-        src,
-        isVideo,
-        poster: item.poster || item.thumb || undefined,
-      };
-    })
-    .filter((entry) => Boolean(entry.src));
-}, [images]);
+  const wrapperRef = useRef(null);
 
-  // Wrap helper for infinite looping
+  /* ----------------------------
+   * Normalize image/video entries
+   * ---------------------------- */
+  const entries = useMemo(() => {
+    const list = Array.isArray(images) ? images : [];
+    return list
+      .filter(Boolean)
+      .map((item) => {
+        if (typeof item === "string") {
+          return {
+            src: item,
+            isVideo: /\.(mp4|webm)(\?.*)?$/i.test(item),
+            poster: undefined,
+          };
+        }
+        const src =
+          item.full || item.url || item.src || item.image || item.path || "";
+        const isVideo =
+          item.type === "video" ||
+          (typeof src === "string" &&
+            /\.(mp4|webm)(\?.*)?$/i.test(src));
+        return {
+          src,
+          isVideo,
+          poster: item.poster || item.thumb || undefined,
+        };
+      })
+      .filter((e) => Boolean(e.src));
+  }, [images]);
+
+  /* ----------------------------
+   * Index helpers
+   * ---------------------------- */
   const wrap = useCallback((i, len) => {
     if (!len) return 0;
     return ((i % len) + len) % len;
   }, []);
 
-  // Controlled/uncontrolled bookkeeping
   const isControlled = controlled != null;
-  const [internal, setInternal] = useState(() => wrap(startIndex || 0, entries.length));
+  const [internal, setInternal] = useState(() =>
+    wrap(startIndex || 0, entries.length)
+  );
   const idx = isControlled ? wrap(controlled, entries.length) : internal;
 
-  // Reset internal index if startIndex or list length changes
   useEffect(() => {
-    if (!isControlled) setInternal(wrap(startIndex || 0, entries.length));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startIndex, entries.length]);
+    if (!isControlled)
+      setInternal(wrap(startIndex || 0, entries.length));
+  }, [startIndex, entries.length, isControlled, wrap]);
 
-  // Unified setter that wraps and reflects to parent if controlled
   const setIndex = useCallback(
-    (updater) => {
-      const nextRaw = typeof updater === "function" ? updater(idx) : updater;
+    (update) => {
+      const nextRaw = typeof update === "function" ? update(idx) : update;
       const next = wrap(nextRaw, entries.length);
       if (isControlled) {
         onIndexChange?.(next);
@@ -77,14 +80,18 @@ const entries = useMemo(() => {
     [idx, wrap, entries.length, isControlled, onIndexChange]
   );
 
-  const next = useCallback(() => setIndex(i => i + 1), [setIndex]);
-  const prev = useCallback(() => setIndex(i => i - 1), [setIndex]);
+  const next = useCallback(() => setIndex((i) => i + 1), [setIndex]);
+  const prev = useCallback(() => setIndex((i) => i - 1), [setIndex]);
 
-  // Drag / swipe
+  /* ----------------------------
+   * Swipe detection
+   * ---------------------------- */
   const startX = useRef(null);
+
   const onPointerDown = (e) => {
     startX.current = e.clientX ?? e.touches?.[0]?.clientX ?? null;
   };
+
   const onPointerUp = (e) => {
     const sx = startX.current;
     const ex = e.clientX ?? e.changedTouches?.[0]?.clientX ?? null;
@@ -93,13 +100,22 @@ const entries = useMemo(() => {
     const dx = ex - sx;
     if (Math.abs(dx) > 40) (dx < 0 ? next : prev)();
   };
-  const total = entries.length;
-  const current = entries[idx] || { src: "", isVideo: false, poster: undefined };
-  const { src, isVideo, poster } = current;
-  // Media selection
-  // const src = urls[idx] || "";
-  // const isVideo = /\.(mp4|webm)(\?.*)?$/i.test(src);
 
+  /* ----------------------------
+   * Current media entry
+   * ---------------------------- */
+  const current =
+    entries[idx] || {
+      src: "",
+      isVideo: false,
+      poster: undefined,
+    };
+
+  const { src, isVideo, poster } = current;
+
+  /* ----------------------------
+   * Render
+   * ---------------------------- */
   return (
     <div className="carousel-wrapper">
       {onClose && (
@@ -115,31 +131,34 @@ const entries = useMemo(() => {
         onTouchStart={onPointerDown}
         onTouchEnd={onPointerUp}
       >
-        <div className="image-wrapper">
-     {entries.length ? (
-        isVideo ? (
-          <video
-            key={src}
-            className="carousel-image"
-            src={src}
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster={poster}
-          />
-        ) : (
-          <img key={src} className="carousel-image" src={src} alt="" draggable={false} />
-        )
-      ) : (
-        <div className="mc-empty">No media found</div>
-      )}
+        <div className="image-wrapper" ref={wrapperRef}>
+          {entries.length ? (
+            isVideo ? (
+              <video
+                key={src}
+                className="carousel-image"
+                src={src}
+                autoPlay
+                muted
+                loop
+                playsInline
+                poster={poster}
+              />
+            ) : (
+              <img
+                key={src}
+                className="carousel-image"
+                src={src}
+                alt=""
+                draggable={false}
+              />
+            )
+          ) : (
+            <div className="mc-empty">No media found</div>
+          )}
         </div>
       </div>
 
-    
-
-      {/* Tablet & Mobile dots — centered under the media pane */}
       <PaginationDots
         index={idx}
         total={entries.length}

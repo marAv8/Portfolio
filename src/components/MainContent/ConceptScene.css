@@ -1,5 +1,15 @@
 /* src/components/MainContent/ConceptScene.css */
 
+/* Radial gradient background — matches CanvasScene landing page */
+.concept-gradient-bg {
+  background: radial-gradient(
+    circle at 50% 35%,
+    #1a1a1a 0%,
+    #050505 65%,
+    #000000 100%
+  );
+}
+
 .canvas-container {
   width: 100vw;
   height: 100vh;
@@ -32,6 +42,18 @@
   pointer-events: none;
 }
 
+.concept-hint-wrapper--left {
+  transform: translate(-100%, -50%);
+}
+
+.concept-hint-wrapper--right {
+  transform: translate(0, -50%);
+}
+
+.concept-hint-wrapper--center {
+  transform: translate(-50%, -50%);
+}
+
 .concept-hint {
   min-width: 240px;
   padding: 1.05rem 1.75rem;
@@ -43,22 +65,11 @@
   font-family: inherit;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.25rem;
+  text-align: left;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-}
-
-.concept-hint--left {
-  text-align: left;
-  align-items: flex-start;
-}
-.concept-hint--right {
-  text-align: right;
-  align-items: flex-end;
-}
-.concept-hint--center {
-  text-align: center;
-  align-items: center;
 }
 
 .concept-hint__title {

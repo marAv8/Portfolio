@@ -14,27 +14,142 @@
 .canvas-black-overlay.fade-out {
   opacity: 0;
 }
+/* LCP HERO — full-screen gradient for Lighthouse */
+.lcp-hero {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 35%,
+    #1a1a1a 0%,
+    #050505 65%,
+    #000000 100%
+  );
+  z-index: 9998; /* BELOW loading dot, ABOVE nav */
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.55s ease;
+}
+
+.lcp-hero.hide {
+  opacity: 0;
+}
+
+.loading-dot-global {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999; /* Highest */
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.65s ease;
+}
+
+.loading-dot-global::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.85), rgba(255,255,255,0));
+  animation: pulse 1.4s ease-in-out infinite;
+  filter: blur(2px);
+}
+
+.loading-dot-global.hide {
+  opacity: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.4; }
+  50% { transform: scale(1.5); opacity: 0.9; }
+}
+
+
+.loading-dot.hide {
+  opacity: 0;
+  transition: opacity 0.65s ease;
+}
+
 
 
 /* CanvasScene.css addition */
 .landing-layout {
   display: flex;
   width: 100vw;
-  height: 100vh;
+  height: 100svh;
+  min-height: 100svh;
   overflow: hidden;
 }
 
 .canvas-column {
   flex: 1;
   position: relative;
-  transform: translateX(40px); 
   z-index: 0;
+  /* Your soft diffused background */
+  background: radial-gradient(
+    circle at 50% 35%,
+    #1a1a1a 0%,
+    #050505 65%,
+    #000000 100%
+  );
 }
+
 
 .landing-canvas {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.canvas-poster {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 35%, #1a1a1a 0%, #050505 65%, #000 100%);
+  overflow: hidden;
+  z-index: 2;
+  opacity: 1;
+  transition: opacity 0.65s ease, visibility 0s linear 0.65s;
+  pointer-events: none;
+}
+
+.canvas-poster.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.canvas-poster__text {
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  color: #f8f2eb;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  padding: 2rem 2.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(5, 5, 5, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.canvas-poster__eyebrow {
+  font-size: 0.8rem;
+}
+
+.canvas-poster__title {
+  font-size: 1.1rem;
+  letter-spacing: 0.6em;
+}
+
+.canvas-poster__tagline {
+  font-size: 0.72rem;
+  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 
@@ -43,6 +158,28 @@
   flex: 1;
   position: relative;
   z-index: 0;
+}
+
+.landing-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #0f0f0f 0%, #000 65%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  gap: 1rem;
+}
+
+.landing-placeholder .placeholder-halo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 35px rgba(255, 255, 255, 0.2);
 }
 
 .canvas-global-hint-chip {

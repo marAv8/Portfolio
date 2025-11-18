@@ -47,7 +47,7 @@ export default function RimCrownArc({
   // subtle Z push
   pushBack = -0.15,
 
-  // ✅ end-overlap control (keeps last disks off the base rim)
+
   edgeSelfInsetMul = 0.60,
   edgeInset = 0.18,
   edgeLift = 0.06,

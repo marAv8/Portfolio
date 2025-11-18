@@ -89,7 +89,7 @@ export const right = {
   ],
 };
 
-// ✅ Named export (mirrors left-side style)
+
 export const hatsAssets = right.hats;
 
 // (Optional helpers you already had)

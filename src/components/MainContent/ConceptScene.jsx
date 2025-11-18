@@ -38,12 +38,12 @@ const HatsOverlay        = React.lazy(() => import("../Overlays/HatsOverlay"));
 
 const DEFAULT_HINT_LINES = ["Click & drag to view", "Click to open"];
 const LABEL_CONFIG = {
-  root: { offset: [14, 9, 0], align: "left" },
-  penumbra: { offset: [-14, 9, 0], align: "right" },
-  lumen: { offset: [12, -2, 0], align: "left" },
-  abyss: { offset: [-12, -4, 0], align: "right" },
-  hats: { offset: [0, 10, 0], align: "center" },
-  early: { offset: [0, 10, 0], align: "center" },
+  root: { offset: [10, 10, 0], align: "right" },
+  penumbra: { offset: [-30, 10, 0], align: "left" },
+  lumen: { offset: [10, -1, 0], align: "right" },
+  abyss: { offset: [-30, 10, 0], align: "left" },
+  hats: { offset: [-9, 15, 0], align: "center" },
+  early: { offset: [-9, 18, 0], align: "center" },
 };
 
 const addVec = (a = [0, 0, 0], b = [0, 0, 0]) => [
@@ -142,6 +142,7 @@ function DesktopConceptScene({ isTablet }) {
 
   // Desktop-only preload mask (kept simple)
   const [maskVisible, setMaskVisible] = useState(true);
+  const [isPointerDown, setIsPointerDown] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setMaskVisible(false), 900);
     return () => clearTimeout(t);
@@ -226,10 +227,10 @@ function DesktopConceptScene({ isTablet }) {
    fov:     layout.camera?.fov      ?? 44,
  }));
 
-  const visibleHint = !activeClusterId && hoveredClusterId
+  const hoveredHint = !activeClusterId && hoveredClusterId
     ? clusterHints.find((entry) => entry.id === hoveredClusterId)
     : null;
-  const hintDistance = isTablet ? 26 : 34;
+  const activeHint = !isPointerDown ? hoveredHint : null;
 
   // =========================================
 // NEW: viewport scale multiplier
@@ -292,15 +293,27 @@ useEffect(() => {
   return () => { try { delete window.focusCluster; } catch {} };
 }, [focusCluster]);
 
- 
+useEffect(() => {
+  const handlePointerUp = () => setIsPointerDown(false);
+  window.addEventListener('pointerup', handlePointerUp);
+  window.addEventListener('pointercancel', handlePointerUp);
+  return () => {
+    window.removeEventListener('pointerup', handlePointerUp);
+    window.removeEventListener('pointercancel', handlePointerUp);
+  };
+}, []);
+
 const lumenLayout = layout?.clusters?.lumen;
 return (
-<section className="relative h-screen w-full overflow-hidden bg-black">
+<section 
+  className="relative h-screen w-full overflow-hidden concept-gradient-bg"
+>
         <Canvas
         dpr={[1, Math.min(1.75, window.devicePixelRatio || 1)]}
-        gl={{ antialias: !lite, powerPreference: lite ? "low-power" : "high-performance", alpha: false }}
+        gl={{ antialias: !lite, powerPreference: lite ? "low-power" : "high-performance", alpha: true }}
         shadows={false}
-        style={{ width: "100%", height: "100%", background: "black" }}
+        style={{ width: "100%", height: "100%", background: "transparent" }}
+        onPointerDown={() => setIsPointerDown(true)}
       >
         <PerformanceMonitor onDecline={() => setLite(true)} />
         <AdaptiveDpr pixelated />
@@ -443,29 +456,27 @@ return (
           />
         </Suspense>
 
-        {visibleHint && (
+        {activeHint && (
           <Html
-            transform
-            position={visibleHint.position}
-            distanceFactor={hintDistance}
-            wrapperClass={`concept-hint-wrapper concept-hint-wrapper--${visibleHint.align}`}
+            position={activeHint.position}
+            wrapperClass={`concept-hint-wrapper concept-hint-wrapper--${activeHint.align}`}
           >
-            <div className={`concept-hint concept-hint--${visibleHint.align}`}>
-              <p className="concept-hint__title">{visibleHint.title}</p>
-              {visibleHint.subtitle ? (
-                <p className="concept-hint__subtitle">{visibleHint.subtitle}</p>
+            <div className={`concept-hint concept-hint--${activeHint.align}`}>
+              <p className="concept-hint__title">{activeHint.title}</p>
+              {activeHint.subtitle ? (
+                <p className="concept-hint__subtitle">{activeHint.subtitle}</p>
               ) : null}
-              {visibleHint.year ? (
-                <p className="concept-hint__year">{visibleHint.year}</p>
+              {activeHint.year ? (
+                <p className="concept-hint__year">{activeHint.year}</p>
               ) : null}
-              {Array.isArray(visibleHint.hintLines)
-                ? visibleHint.hintLines.map((line, idx) => (
+              {Array.isArray(activeHint.hintLines)
+                ? activeHint.hintLines.map((line, idx) => (
                     <p key={idx} className="concept-hint__hint">
                       {line}
                     </p>
                   ))
                 : (
-                    <p className="concept-hint__hint">{visibleHint.hintLines || visibleHint.hint}</p>
+                    <p className="concept-hint__hint">{activeHint.hintLines || activeHint.hint}</p>
                   )}
             </div>
           </Html>

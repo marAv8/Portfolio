@@ -1,6 +1,4 @@
-/* =================== ClusterCarousel.css =================== */
-
-/* Container for entire carousel */
+/* FRAMEWORK */
 .carousel-wrapper {
   width: 100%;
   height: 100%;
@@ -12,7 +10,6 @@
   overflow-x: hidden;
 }
 
-/* Container for the current image */
 .carousel-image-container {
   width: 100%;
   height: 75vh;
@@ -26,16 +23,15 @@
 .image-wrapper {
   width: 100%;
   height: 100%;
-  position: relative; /* required for transitions if added later */
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
 }
 
-/* The image itself */
 .carousel-image {
-  background-color: black; /* static fallback only */
+  background-color: black;
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
@@ -43,7 +39,7 @@
   user-select: none;
 }
 
-/* Close button (X glyph) */
+/* Close button */
 .close-btn {
   position: absolute;
   top: 1rem;
@@ -58,125 +54,35 @@
   line-height: 1;
 }
 
-/* Navigation arrows (rendered always; hidden on small screens via media queries) */
-.carousel-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: -2rem;
-  padding-bottom: 1.5rem;
-  gap: 4rem;
-  z-index: 5;
-}
-
-.carousel-arrow {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 0.2s ease;
-}
-
-.carousel-arrow:hover {
-  transform: scale(1.2);
-}
-
-/* Shared margin override */
-.carousel-arrow,
-.pagination-dots {
-  margin-top: 0;
-}
-
-/* Dots container (kept here so it sits under the image with good spacing) */
-.pagination-dots-container {
-  position: static !important;       /* keep in normal flow, not over the image */
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: clamp(10px, 2vh, 20px); /* space under the image */
-}
-
-/* =================== Mobile =================== */
+/* RESPONSIVE */
 @media (max-width: 768px) {
   .carousel-wrapper {
     padding: 2.5rem 1rem 3.5rem;
     justify-content: center;
   }
-
   .carousel-image-container {
     height: 60vh;
   }
-
   .carousel-image {
     max-height: 60vh;
   }
-
-  .carousel-controls {
-    display: none; /* hide arrows on mobile */
-  }
 }
 
-/* =================== Tablet =================== */
 @media (min-width: 769px) and (max-width: 1024px) {
   .carousel-wrapper {
     padding: 4.5rem 2rem 3.5rem;
     justify-content: flex-start;
   }
-
   .carousel-image-container {
-    height: 70vh; /* leave room for dots below */
-  }
-
-  .pagination-dots-container {
-    align-self: center;
-    margin-top: clamp(12px, 2.2vh, 28px);
-  }
-
-  .carousel-controls {
-    display: none; /* hide arrows on tablet */
+    height: 70vh;
   }
 }
 
-/* =================== Desktop =================== */
 @media (min-width: 1025px) {
   .carousel-wrapper {
     padding: 4.5rem 2rem 6.5rem;
-    justify-content: center;
-    position: relative;
   }
-
   .image-wrapper {
-    width: 100%;
     height: 75vh;
   }
-
-  .carousel-image {
-    max-height: 100%;
-    max-width: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    display: block;
-    margin: 0 auto;
-  }
-
-  .carousel-controls {
-    position: relative;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 4rem;
-    z-index: 10;
-  }
-
-
-  /* Optional: hide dots on desktop if arrows are enough */
-  /* .pagination-dots-container { display: none; } */
 }
