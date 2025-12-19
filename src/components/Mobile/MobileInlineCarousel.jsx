@@ -2,6 +2,7 @@
 import React from "react";
 import PaginationDots from "../UI/PaginationDots";
 import "./MobileCarousel.css";
+import MobileSlidingStrip from "./MobileSlidingStrip";
 
 /** Normalize to {src, poster, isVideo} so posters stay aligned per slide. */
 function extractVisibleItems(type, cluster) {
@@ -62,50 +63,7 @@ export default function MobileInlineCarousel({
   const current = items[index] || { src: "", isVideo: false, poster: undefined };
   const { src, isVideo, poster } = current;
 
-  // --- Axis lock swipe (no vertical jump) ---
-  const startX = React.useRef(null);
-  const startY = React.useRef(null);
-  const locked = React.useRef(null); // 'x' | 'y' | null
-  const swiped = React.useRef(false);
-  const THRESH_LOCK = 6;
-  const THRESH_SWIPE = 40;
-
-  const onTouchStart = (e) => {
-    const t = e.touches?.[0];
-    startX.current = t?.clientX ?? null;
-    startY.current = t?.clientY ?? null;
-    locked.current = null;
-    swiped.current = false;
-  };
-  const onTouchMove = (e) => {
-    const t = e.touches?.[0];
-    if (!t || startX.current == null || startY.current == null) return;
-    const dx = t.clientX - startX.current;
-    const dy = t.clientY - startY.current;
-    if (!locked.current) {
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > THRESH_LOCK) locked.current = "x";
-      else if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > THRESH_LOCK) locked.current = "y";
-    }
-    if (locked.current === "x" && e.cancelable) e.preventDefault();
-  };
-  const onTouchEnd = (e) => {
-    const t = e.changedTouches?.[0];
-    if (!t || startX.current == null) return;
-    const dx = t.clientX - startX.current;
-    if (locked.current === "x" && Math.abs(dx) > THRESH_SWIPE) {
-      swiped.current = true;
-      const dir = dx < 0 ? +1 : -1;
-      setIndex((i) => {
-        const next = (i + dir) % total;
-        return next < 0 ? next + total : next;
-      });
-    }
-    startX.current = null;
-    startY.current = null;
-    locked.current = null;
-  };
   const onClickViewport = () => {
-    if (swiped.current) { swiped.current = false; return; }
     onOpenOverlay?.(cluster?.id);
   };
 
@@ -285,51 +243,14 @@ export default function MobileInlineCarousel({
 
       <div
         className="mi-viewport"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
         onClick={onClickViewport}
       >
         {items.length ? (
-          isVideo ? (
-            <div className="mi-stack">
-              {/* Poster sits ABOVE the video until videoReady */}
-              {poster && posterReady && (
-                <img
-                  className="mi-media mi-poster"
-                  src={poster}
-                  alt=""
-                  draggable={false}
-                  style={{ opacity: videoReady ? 0 : 1 }}
-                />
-              )}
-
-              <video
-                key={`${src}-${index}`}         // force a fresh element per slide
-                ref={videoRef}
-                className="mi-media"
-                src={src}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-                poster={poster}
-                // keep the video hidden until we are *sure* a frame is decodable and painted
-                style={{ opacity: videoReady ? 1 : 0 }}
-                onLoadedMetadata={onLoadedMetadata}
-                onLoadedData={onLoadedData}
-              />
-            </div>
-          ) : (
-            <img
-              className="mi-media"
-              src={src}
-              alt=""
-              draggable={false}
-              fetchpriority={type === "root" && index === 0 ? "high" : undefined}
-            />
-          )
+          <MobileSlidingStrip
+            items={items}
+            index={index}
+            onIndexChange={setIndex}
+          />
         ) : (
           <div className="mi-empty">No media found</div>
         )}

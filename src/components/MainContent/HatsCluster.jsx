@@ -1,4 +1,5 @@
-import React from 'react';
+// src/components/MainContent/HatsCluster.jsx
+import React, { useMemo } from 'react';
 import SatelliteRingCluster from './SatelliteRingCluster';
 
 export default function HatsCluster({
@@ -7,13 +8,26 @@ export default function HatsCluster({
   onActivate = () => {},
   ...rest
 }) {
+  const normalized = useMemo(
+    () =>
+      (assets ?? [])
+        .map((a) => {
+          // allow either object assets or already-normalized {url}
+          const url =
+            (a && typeof a === 'object' && (a.url || a.full || a.mid || a.thumb)) ||
+            (typeof a === 'string' ? a : null);
+
+          return url ? { ...a, url } : null;
+        })
+        .filter(Boolean),
+    [assets]
+  );
+
   return (
     <SatelliteRingCluster
       id={id}
-      assets={assets}
-      // click-only mini cluster → parent opens overlay
+      assets={normalized}
       onActivate={() => onActivate(id)}
-      // identical ring layout/motion to Early Aliens
       panelSize={[0.46, 0.62]}
       fitByHeight
       gap={0.02}

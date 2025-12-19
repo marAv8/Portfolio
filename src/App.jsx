@@ -1,6 +1,6 @@
 // src/App.jsx
-import React, { useState, useEffect, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import React, { useState, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ScreenSizeProvider } from './contexts/ScreenSizeContext';
 import { ModalContext } from './contexts/ModalContext';
 import Nav from './components/Navigation/Nav';
@@ -18,26 +18,25 @@ const ConceptScene = React.lazy(() =>
 function AppContent() {
   const location = useLocation();
   const [showContact, setShowContact] = useState(false);
-  const [startAssetAnimation, setStartAssetAnimation] = useState(false);
   const isConceptPage = location.pathname === '/concepts';
-
-  useEffect(() => {
-    const t = setTimeout(() => setStartAssetAnimation(true), 2500);
-    return () => clearTimeout(t);
-    }, []);
+  const isLanding = location.pathname === '/';
 
   return (
     <ModalContext.Provider value={showContact}>
-      <Nav
-        onContactClick={() => setShowContact(true)}
-        isConceptPage={isConceptPage}
-      />
-      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+      {!isLanding && (
+        <>
+          <Nav
+            onContactClick={() => setShowContact(true)}
+            isConceptPage={isConceptPage}
+          />
+          {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+        </>
+      )}
 
       <Routes>
         <Route
           path="/"
-          element={<CanvasScene startAssetAnimation={startAssetAnimation} />}
+          element={<CanvasScene />}
         />
         <Route
           path="/concepts"

@@ -110,7 +110,7 @@ export default function LumenCluster({
     return () => setControlsEnabled(true);
   }, [isMobile, setControlsEnabled]);
 
-  // main plane: billboard & offset toward camera
+  // main plane: billboard & offset toward camera (mirrors Abyss behaviour)
   const BASE_RADIUS  = 12;
   const HIT_PAD      = 3.5;
   const PLANE_W      = 2 * (BASE_RADIUS + HIT_PAD);
@@ -332,7 +332,7 @@ export default function LumenCluster({
               ref={earthRef}
               raycast={NO_RAYCAST}
               position={[0, -8, -0.6]}
-              rotation={[deg(-10), 0, 0]}
+              rotation={[0, 0, 0]}
             >
               <LumenEarth items={earth} />
               {subHitplanes && (
@@ -352,9 +352,8 @@ export default function LumenCluster({
             <group
               ref={moonRef}
               raycast={NO_RAYCAST}
-              position={[-4, -2, -0.25]}
-              rotation={[deg(-5), deg(12), 0]}
-            >
+              position={[-2, -2.5, -0.25]}
+              >
               <LumenMoon items={moon} />
               {subHitplanes && (
                 <SubHitPlane
@@ -373,13 +372,13 @@ export default function LumenCluster({
             <group
               ref={spaceRef}
               raycast={NO_RAYCAST}
-              position={[1, -1.95, 0.10]}
+              position={[1, -6, -5]}
               rotation={[0, deg(5), 0]}
             >
-              <group raycast={NO_RAYCAST}>
+              {/* <group raycast={NO_RAYCAST}>
               <LumenStarfield
                 // placement
-                position={[0, 0.5, 0]}
+                position={[-1, 4, 4]}
                 rotation={[0, 0, 0]}
 
                 // starfield volume
@@ -420,7 +419,7 @@ export default function LumenCluster({
                 fogSpread={[1.8, 1.2, 1.0]}
                 fogDrift={0.065}
               />
-              </group>
+              </group> */}
               <LumenSpace items={space} />
               {subHitplanes && (
                 <SubHitPlane

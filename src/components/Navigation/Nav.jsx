@@ -16,15 +16,15 @@ export default function Nav({ onContactClick, isConceptPage = false }) {
 
   return (
     <nav className={`nav-container ${layoutClass}`}>
-      <div className="nav-pill">
+       <div className="nav-pill">
         <Link
           to={isConceptPage ? "/" : "/concepts"}
           className="nav-link glow"
           style={{ "--delay": "0.5s" }}
         >
-          {isConceptPage ? "Home" : "Concepts"}
+          {isConceptPage ? "Images" : "Clusters"}
         </Link>
-      </div>
+      </div> 
 
       <div className="nav-pill">
         <button
@@ -32,7 +32,7 @@ export default function Nav({ onContactClick, isConceptPage = false }) {
           className="nav-link glow contact-btn"
           style={{ "--delay": "1.7s" }}
         >
-          About
+          Contact
         </button>
       </div>
     </nav>

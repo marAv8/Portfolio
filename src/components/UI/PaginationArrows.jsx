@@ -1,5 +1,6 @@
 import React from "react";
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
+import PaginationDots from "./PaginationDots";
 import "./PaginationArrows.css";
 
 /**
@@ -12,50 +13,63 @@ export default function PaginationArrows({
   total = 0,
   onPrev,
   onNext,
+  onDotClick,
   className = "",
-  loop = true,
+  loop = false,
 }) {
   const { isMobile, isTablet } = useScreenSize();
-  if (isMobile || isTablet || total <= 1) return null;
+  if (isMobile || total <= 1) return null;
 
-  const wrappedIndex = total > 0 ? ((index % total) + total) % total : 0;
-  const canPrev = wrappedIndex > 0;
-  const canNext = wrappedIndex < total - 1;
+  const maxIndex = Math.max(total - 1, 0);
+  const displayIndex =
+    loop && total > 0
+      ? ((index % total) + total) % total
+      : Math.min(Math.max(index, 0), maxIndex);
+  const canPrev = loop ? total > 1 : displayIndex > 0;
+  const canNext = loop ? total > 1 : displayIndex < maxIndex;
 
-    const handlePrev = () => {
-    if (loop || canPrev) onPrev?.();
+  const handlePrev = () => {
+    if (!loop && !canPrev) return;
+    onPrev?.();
   };
   const handleNext = () => {
-    if (loop || canNext) onNext?.();
+    if (!loop && !canNext) return;
+    onNext?.();
   };
 
   return (
     <div className={`pagination-arrows ${className}`}>
-       <button
+      <button
         className="nav left"
         aria-label="Previous"
         aria-disabled={!loop && !canPrev}
         onClick={handlePrev}
       >
-        {/* left chevron */}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
-      <div className="status">
-        {wrappedIndex + 1} / {total} 
-      </div>
+      <PaginationDots
+        index={displayIndex}
+        total={total}
+        onDotClick={(i) => {
+          if (typeof onDotClick === "function") {
+            onDotClick(i);
+          }
+        }}
+        maxVisible={9}
+        forceShow
+      />
 
       <button
         className="nav right"
         aria-label="Next"
-       aria-disabled={!loop && !canNext}
+        aria-disabled={!loop && !canNext}
         onClick={handleNext}
       >
-        {/* right chevron */}
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M9 6L15 12L9 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M9 6L15 12L9 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
     </div>

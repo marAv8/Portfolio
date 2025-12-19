@@ -227,10 +227,13 @@ const resolvedImages = useMemo(() => (
 
   const usingFallbackImages = resolvedImages === FALLBACK_CONCEPT_IMAGES;
   const staticImages   = resolvedImages.filter((img) => !img.isFloating);
-  
   const rotatingImages = resolvedImages.filter((img) =>  img.isFloating);
-  const ringAImages = rotatingImages.filter((img) => (img.ring ?? 'A') === 'A');
-  const ringBImages = rotatingImages.filter((img) => img.ring === 'B');
+  const ringAImages = rotatingImages
+    .filter((img) => (img.ring ?? 'A') === 'A')
+    .map((img) => ({ ...img, url: resolveUrl(img) }));
+  const ringBImages = rotatingImages
+    .filter((img) => img.ring === 'B')
+    .map((img) => ({ ...img, url: resolveUrl(img) }));
 
   const diskColor = usingFallbackImages ? [0.96, 0.92, 0.88] : [1.0, 0.96, 0.82];
   

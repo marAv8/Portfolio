@@ -223,7 +223,7 @@ useEffect(() => {
   }, [rest]);
 
   const renderPanelContent = (item) => {
-    const url = item?.url ?? '';
+    const url = item?.url || item?.full || item?.thumb || '';
     const isVideo = item.type === 'video' || url.toLowerCase().endsWith('.mp4');
     const [w, h] = Array.isArray(item.size) ? item.size : [1, 1];
     if (isVideo) return <PanelVideoFace url={url} width={w} height={h} fit="contain" />;

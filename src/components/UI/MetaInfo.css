@@ -1,30 +1,38 @@
 /* ===== Base (desktop) ===== */
 .meta-info {
-  /* position variables you can tweak globally */
   --meta-left: 2rem;
   --meta-top: 1.5rem;
   --meta-right: 1rem;
   --meta-color: #ffffff;
-  --meta-glow-color: rgba(255,255,255,0.75);
+  --meta-glow-color: rgba(255, 255, 255, 0.75);
   --meta-glow-strength: 0.0;
   --meta-shadow-strength: 0.35;
   --meta-max-width: 28rem;
 
-  position: absolute;      /* anchors to the parent wrapper (relative) */
+  position: absolute;
   top: var(--meta-top);
   left: var(--meta-left);
   z-index: 3;
   color: var(--meta-color);
   max-width: var(--meta-max-width);
   pointer-events: none;
+  font-family: "Open Sans", sans-serif;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 
   text-shadow:
-    0 1px 2px rgba(0,0,0,var(--meta-shadow-strength)),
-    0 0 10px color-mix(in srgb, var(--meta-glow-color) calc(var(--meta-glow-strength)*100%), transparent);
+    0 1px 2px rgba(0, 0, 0, var(--meta-shadow-strength)),
+    0 0 6px rgba(0, 0, 0, 0.35);
 
-  background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0));
-  backdrop-filter: blur(2px);
-  padding: 0.25rem 0;
+  background: rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(8px);
+  border-radius: 18px;
+  padding: 0.75rem 1.35rem;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.45);
 }
 
 .meta-info--top-right {
@@ -33,9 +41,27 @@
 }
 
 /* type */
-.meta-info__title { font-size: 1.2rem; font-weight: 700; letter-spacing: .2px; margin-bottom: .25rem; }
-.meta-info__year  { font-size: .95rem; opacity: .85; margin-bottom: .35rem; }
-.meta-info__desc  { font-size: 1rem; line-height: 1.35; opacity: .96; }
+.meta-info__title {
+  font-size: 1.05rem;
+  font-weight: 300;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.07em;
+}
+
+.meta-info__year {
+  font-size: 0.82rem;
+  opacity: 0.9;
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.07em;
+}
+
+.meta-info__desc {
+  font-size: 0.88rem;
+  line-height: 1.4;
+  opacity: 0.88;
+  letter-spacing: 0.05em;
+  text-transform: none;
+}
 
 /* ===== Tablet (≤ 1024px) ===== */
 @media (max-width: 1024px) {
@@ -44,8 +70,8 @@
     --meta-top: 1.25rem;
     --meta-max-width: 22rem;
   }
-  .meta-info__title { font-size: 1.1rem; }
-  .meta-info__desc  { font-size: .98rem; }
+  .meta-info__title { font-size: 1rem; }
+  .meta-info__desc  { font-size: 0.84rem; }
 }
 
 /* ===== Mobile (≤ 640px) ===== */
@@ -56,9 +82,9 @@
     --meta-top: 3.25rem;     /* <- adjust this if your nav is taller */
     --meta-max-width: calc(100vw - 2rem);
   }
-  .meta-info__title { font-size: 1.02rem; }
-  .meta-info__year  { font-size: .85rem; }
-  .meta-info__desc  { font-size: .95rem; line-height: 1.3; }
+  .meta-info__title { font-size: 0.96rem; }
+  .meta-info__year  { font-size: 0.78rem; }
+  .meta-info__desc  { font-size: 0.82rem; line-height: 1.32; }
 }
 
 /* optional theme */

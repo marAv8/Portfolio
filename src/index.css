@@ -2,6 +2,7 @@
    src/index.css
    ===================================================================== */
 
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap");
 /* Tailwind v4 preferred import */
 @import "tailwindcss";
 @tailwind base;
@@ -19,7 +20,7 @@ html, body, #root {
                Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji",
                "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
     font-weight: 300;          /* or 200 for an even lighter feel */
-  font-size: 13px;           /* optional: shrink the base size */
+  font-size: 14px;           /* optional: shrink the base size */
   letter-spacing: 0.02em;             
   box-sizing: border-box;
   overflow-x: hidden;

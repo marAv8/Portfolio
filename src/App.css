@@ -18,6 +18,16 @@ html, body, #root {
   }
 }
 
+/* 2b) tablet/fold band (769–1400px): allow scrolling */
+@media (min-width: 769px) and (max-width: 1400px) {
+  #root {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
 /* 3) MOBILE: put everything in ONE media block */
 @media (max-width: 768px) {
   /* Make the document the ONLY vertical scroller */

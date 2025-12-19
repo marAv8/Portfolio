@@ -8,6 +8,7 @@ import ClusterView from '../MainContent/ClusterView';
 import MetaInfo from '../UI/MetaInfo';
 import AbyssCluster from '../MainContent/AbyssCluster';
 import PaginationArrows from "../UI/PaginationArrows";
+import { overlayPaneStyle } from "./overlayStyles";
 
 const deg = (d) => THREE.MathUtils.degToRad(d);
 
@@ -49,24 +50,38 @@ export default function AbyssOverlay({ cluster, onClose }) {
   // normalize urls ONCE so arrows know the length
   const urls = useMemo(() => {
     return visibleImages
-      .map((it) => (typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null))
+      .map((it) => {
+        if (typeof it === "string") return it;
+        return it?.url || it?.full || it?.thumb || it?.src || it?.image || it?.path || null;
+      })
       .filter(Boolean);
   }, [visibleImages]);
 
   // shared index (mobile & desktop)
   const [index, setIndex] = useState(0);
-  const wrap = React.useCallback(
-    (i) => {
-      const len = urls.length || 1;
-      return ((i % len) + len) % len;
+  const clampIndex = React.useCallback(
+    (value) => {
+      if (urls.length === 0) return 0;
+      const max = urls.length - 1;
+      return Math.min(Math.max(value, 0), max);
     },
     [urls.length]
   );
+  const setIndexClamped = React.useCallback(
+    (update) => {
+      setIndex((prev) => {
+        const next = typeof update === "function" ? update(prev) : update;
+        return clampIndex(next);
+      });
+    },
+    [clampIndex]
+  );
+  const safeIndex = clampIndex(index);
   // Dynamic scale per device (for left-side ClusterView)
   const clusterScale = isMobile
     ? [1.1, 1.1, 1.1]
     : isTablet
-    ? [1.2, 1.2, 1.2]
+    ? [1.75, 1.75, 1.75]
     : [1.75, 1.75, 1.75];
 
   /* ======================== MOBILE ======================== */
@@ -105,8 +120,8 @@ export default function AbyssOverlay({ cluster, onClose }) {
 
         <ClusterCarousel
           images={visibleImages}
-          startIndex={index}
-          onIndexChange={setIndex}
+          startIndex={safeIndex}
+          onIndexChange={setIndexClamped}
           onClose={onClose}
         />
       </div>
@@ -147,34 +162,24 @@ export default function AbyssOverlay({ cluster, onClose }) {
       />
 
       {/* Right: Carousel pane */}
-      <div
-        className="media-pane"
-        style={{
-          position: 'relative',
-          flex: '0 0 50vw',
-          height: '100%',
-          backgroundColor: '#000',
-          color: 'white',
-          padding: '2rem',
-          overflowY: 'auto',
-          zIndex: 101,
-        }}
-      >
+      <div className="media-pane" style={overlayPaneStyle}>
         {/* >>> Controlled carousel — responds to index <<< */}
         <ClusterCarousel
           images={visibleImages}
-           index={wrap(index)}
-          onIndexChange={setIndex}
+          index={safeIndex}
+          onIndexChange={setIndexClamped}
           onClose={onClose}
+          showDotsDesktop={false}
         />
 
         {/* Your arrows — now actually drive the same index */}
         <PaginationArrows
           className="in-pane"
-          index={wrap(index)}
+          index={safeIndex}
           total={urls.length}
-          onPrev={() => setIndex(i => wrap(i - 1))}
-          onNext={() => setIndex(i => wrap(i + 1))}
+          onPrev={() => setIndexClamped((i) => i - 1)}
+          onNext={() => setIndexClamped((i) => i + 1)}
+          onDotClick={setIndexClamped}
         />
 
       </div>

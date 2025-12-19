@@ -2,6 +2,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
+import { Link } from 'react-router-dom';
 import './CanvasScene.css';
 import { ModalContext } from '../../contexts/ModalContext';
 import LandingTunnel from './LandingTunnel';
@@ -11,7 +12,7 @@ function SceneOverlay({ visible }) {
   return (
     <mesh position={[0, 0, 10]} renderOrder={999}>
       <planeGeometry args={[500, 500]} />
-      <meshBasicMaterial color="black" transparent opacity={0.5} depthWrite={false} />
+      <meshBasicMaterial color="white" transparent opacity={0.5} depthWrite={false} />
     </mesh>
   );
 }
@@ -46,6 +47,11 @@ export default function CanvasScene({ modalOpen = false }) {
 
       <div className="canvas-column">
         <ModalContext.Provider value={modalOpen}>
+          <div className="landing-cta-overlay">
+            <Link to="/concepts" className="nav-pill landing-cta-pill">
+              <span className="nav-link glow">Clusters</span>
+            </Link>
+          </div>
           <Canvas
             camera={{
               position: [0, 0, 100],
@@ -80,7 +86,7 @@ export default function CanvasScene({ modalOpen = false }) {
             {canvasReady && (
               <Suspense fallback={null}>
                 <group
-                  position={[isMobile ? 0 : 5, 0, 0]}
+                  position={[isMobile ? 0 : 0, 0, 0]}
                   scale={isMobile ? [0.75, 0.75, 0.75] : [1, 1, 1]}
                 >
                   <LandingTunnel

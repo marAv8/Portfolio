@@ -13,6 +13,7 @@ export default function PaginationDots({
   total = 0,
   onDotClick,
   maxVisible = 9,
+  forceShow = false,
 }) {
   const { isMobile, isTablet } = useScreenSize();
 
@@ -37,7 +38,7 @@ export default function PaginationDots({
   const isEdgeClampedRight = end < total;
 
   // ❌ No hooks after this return
-  if (!isMobile && !isTablet) return null;
+  if (!forceShow && !isMobile && !isTablet) return null;
 
   return (
     <div

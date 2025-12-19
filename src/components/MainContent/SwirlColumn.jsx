@@ -115,11 +115,14 @@ export default function SwirlColumn({
       
       const a = Math.min(aIn, aOut);
 
-      // apply opacity to the small subtree
+      // apply opacity and depth ordering to the subtree (panels vs swirl spheres)
       node.traverse((o) => {
-        const m = o.material;
-        if (!m) return;
-        const apply = (mat) => {
+        const matsRaw = o.material;
+        if (!matsRaw) return;
+        const geometryType = (o.geometry?.type || "").toLowerCase();
+        const isSphere = geometryType.includes("sphere");
+        const mats = Array.isArray(matsRaw) ? matsRaw : [matsRaw];
+        mats.forEach((mat) => {
           if (!mat) return;
           mat.transparent = true;
           mat.opacity = a;
@@ -127,10 +130,10 @@ export default function SwirlColumn({
             mat.uniforms.uOpacity.value = a;
             mat.uniformsNeedUpdate = true;
           }
-          if (a < 1 && mat.depthWrite) mat.depthWrite = false;
-        };
-        if (Array.isArray(m)) m.forEach(apply);
-        else apply(m);
+          mat.depthTest = true;
+          mat.depthWrite = isSphere ? false : true;
+        });
+        o.renderOrder = isSphere ? 1 : 2;
       });
     }
   });

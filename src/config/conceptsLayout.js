@@ -42,12 +42,12 @@ const DESKTOP = {
     target: [0, -6, 0],
   },
   clusters: {
-    root:     { position: [  38,  6, -10],rotation: [deg(8), deg(-10), 0],  scale: [2.5, 2.5, 2.5], frameWidth: 20 },
-    penumbra: { position: [-38,   6, -20],rotation: [deg(5), deg(0), 0],  scale: [2.05,2.05,2.05], frameWidth: 18 },
-    lumen:    { position: [ 38, -18,  -10], scale: [2.0, 2.0, 2.0], frameWidth: 18 },
-    abyss:    { position: [-38, -28, -20],  baseScale: 1.2,        frameWidth: 22 },
-    hats:     { position: [   0,   6, -14], baseScale: 6,          frameWidth: 20 },
-    early:    { position: [  0, -22, -16],  baseScale: 6,          frameWidth: 24 },
+    root:     { position: [  38,  6, -10],rotation: [deg(7), deg(-20), 0],  scale: [3, 3, 3], frameWidth: 20 },
+    penumbra: { position: [-38,   6, -10],rotation: [deg(5), deg(0), 0],  scale: [2.3,2.3,2.3], frameWidth: 18 },
+    lumen:    { position: [ 37, -8,  -10], rotation: [deg(-12), -.4, 0], scale: [2.6, 2.6, 2.6], frameWidth: 18 },
+    abyss:    { position: [-38, -28, -10], rotation: [deg(-12), .25, 0],  baseScale: 1.5,        frameWidth: 22 },
+    hats:     { position: [   0,   6, -14], baseScale: 7.4,        frameWidth: 20 },
+    early:    { position: [  0, -22, -14],  baseScale: 7.4,        frameWidth: 24 },
   },
 };
 
@@ -61,12 +61,12 @@ const TABLET = {
     target: [0, -6, 0],
   },
   clusters: {
-    root:     { position: [  30,  4,   -14],rotation: [deg(8), deg(-10), 0],    scale: [1.7, 1.7, 1.7], frameWidth: 20 },
-    penumbra: { position: [-30,  4,  -16],rotation: [deg(5), deg(0), 0],     scale:[1.5,1.5, 1.5], frameWidth: 18 },
-    lumen:    { position: [ 30, -15, -10],     scale:[1.5, 1.5, 1.5], frameWidth: 18 },
-    abyss:    { position: [-30, -28, -20],     baseScale: 1,         frameWidth: 24 },
-    hats:     { position: [  0,  4, -14],      baseScale: 5.5,      frameWidth: 20 },
-    early:    { position: [  0, -20, -16],     baseScale: 6,         frameWidth: 24 },
+    root:     { position: [  30,  4,   -10],rotation: [deg(7), deg(-20), 0],    scale: [2.5, 2.5, 2.5], frameWidth: 20 },
+    penumbra: { position: [-30,  4,  -10],rotation: [deg(5), deg(0), 0],     scale:[1.95,1.95, 1.95], frameWidth: 18 },
+    lumen:    { position: [ 30, -8, -10],rotation: [deg(-12), -.4, 0],  scale: [2.4, 2.4, 2.4], frameWidth: 18 },
+    abyss:    { position: [-30, -28, -10], rotation: [deg(-15), .25, 0],    baseScale: 1.3,         frameWidth: 24 },
+    hats:     { position: [  0,  4, -14],      baseScale: 6,      frameWidth: 20 },
+    early:    { position: [  0, -20, -14],     baseScale: 6,         frameWidth: 24 },
   },
 };
 
@@ -92,7 +92,7 @@ const MOBILE = {
       // How the root should look in the PREVIEW card
       preview: {
         centerFromLayout: false,
-        rotation: [deg(10), 0, 0],
+        rotation: [deg(1), 0, 0],
         scale: 1,
         biasY: -1,                       
       },
@@ -101,11 +101,11 @@ const MOBILE = {
     /* Penumbra */
     penumbra: {
       position: [0, -18, 0],
-      rotation: [0, deg(2) , 0],
+      rotation: [deg(5), deg(4) , 0],
       baseScale: 1.35,
       preview: {
         centerFromLayout: false,        
-        rotation: [deg(10), 0, 0],
+        rotation: [deg(3), 0, 0],
         scale: 0.72,
         biasY: -0.1,
       },
@@ -114,11 +114,11 @@ const MOBILE = {
     /* Lumen (added to mobile) */
     lumen: {
       position: [0, -20, 0],
-      rotation: [deg(2), 0, 0],
+      rotation: [deg(-8), 0, 0],
       baseScale: 1.0,
       preview: {
         centerFromLayout: false,
-        rotation: [deg(5), 0, 0],
+        rotation: [deg(-8), 0, 0],        
         scale: 1.2,
         biasY: 6,
         cameraZ: 26,
@@ -133,7 +133,7 @@ const MOBILE = {
       baseScale: 1.0,
       preview: {
         centerFromLayout: false,
-        rotation: [deg(8), 0, 0], 
+        rotation: [deg(5), 0, 0], 
         scale: 0.65,
         biasY: -0.05,
         cameraZ: 26,

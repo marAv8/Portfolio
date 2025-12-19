@@ -12,37 +12,48 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 60px;                 /* tweak if you want it closer/farther */
+  bottom: clamp(22px, 6vh, 54px);                 /* tweak if you want it closer/farther */
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   z-index: 10020;               /* above the overlay content */
   pointer-events: auto;
 }
 
 .pagination-arrows .nav{
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.65);
-  background: rgba(255,255,255,.12);
+  width: auto;
+  height: auto;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: transform .18s ease, background .2s ease, opacity .2s ease;
-  backdrop-filter: blur(3px);
+  transition: transform .18s ease, opacity .2s ease;
 }
-.pagination-arrows .nav:hover{ transform: translateY(-1px); background: rgba(255,255,255,.18); }
+.pagination-arrows .nav:hover{ transform: translateY(-1px); }
 
-.pagination-arrows .status{
-  color: #fff;
-  font-size: 14px;
-  letter-spacing: .4px;
-  opacity: .85;
+.pagination-arrows .pagination-dots-container{
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  margin: 0 !important;
+}
+.pagination-arrows .dots-viewport{
+  gap: 8px;
+  padding: 0 6px;
 }
 
 /* hide on small screens — dots handle pagination there */
 @media (max-width: 900px){
   .pagination-arrows{ display: none; }
+}
+
+@media (max-width: 1100px) {
+  .pagination-arrows {
+    bottom: clamp(16px, 5vh, 38px);
+  }
 }

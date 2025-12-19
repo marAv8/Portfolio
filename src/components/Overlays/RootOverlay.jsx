@@ -7,6 +7,7 @@ import ClusterView from "../MainContent/ClusterView";
 import ConceptCluster from '../MainContent/ConceptCluster';
 import MetaInfo from "../UI/MetaInfo";
 import PaginationArrows from "../UI/PaginationArrows";
+import { overlayPaneStyle } from "./overlayStyles";
 
 export default function RootOverlay({ cluster, onClose }) {
   const { isMobile, isTablet } = useScreenSize();
@@ -14,27 +15,45 @@ export default function RootOverlay({ cluster, onClose }) {
     const deg = (d) => THREE.MathUtils.degToRad(d);
   const visibleImages = React.useMemo(() => {
     const arr = cluster?.images ?? [];
-    return arr.filter((item) => {
-      if (!item) return false;
-      if (typeof item === "string") return true;
-      return !item.hidden;
-    });
+    return arr
+      .filter((item) => {
+        if (!item) return false;
+        if (typeof item === "string") return true;
+        return !item.hidden;
+      })
+      .map((it) => {
+        if (typeof it === "string") return it;
+        const url = it.url || it.full || it.thumb || it.src || it.image || it.path;
+        return url ? { ...it, url } : null;
+      })
+      .filter(Boolean);
   }, [cluster]);
   const urls = React.useMemo(() => {
     return visibleImages
-      .map((it) => (typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null))
+      .map((it) => (typeof it === "string" ? it : it?.url))
       .filter(Boolean);
   }, [visibleImages]);
 
   // Shared index + wrap for desktop/tablet
   const [index, setIndex] = React.useState(0);
-  const wrap = React.useCallback(
-    (i) => {
-      const len = urls.length || 1;
-      return ((i % len) + len) % len;
+  const clampIndex = React.useCallback(
+    (value) => {
+      if (urls.length === 0) return 0;
+      const max = urls.length - 1;
+      return Math.min(Math.max(value, 0), max);
     },
     [urls.length]
   );
+  const setIndexClamped = React.useCallback(
+    (update) => {
+      setIndex((prev) => {
+        const next = typeof update === "function" ? update(prev) : update;
+        return clampIndex(next);
+      });
+    },
+    [clampIndex]
+  );
+  const safeIndex = clampIndex(index);
   // DIAG
   const diagRef = React.useRef(null);
   React.useEffect(() => { /** [DIAG4] */
@@ -67,7 +86,7 @@ export default function RootOverlay({ cluster, onClose }) {
   const clusterScale = isMobile
     ? [1.1, 1.1, 1.1]
     : isTablet
-    ? [1.35, 1.35, 1.35]
+    ? [1.8, 1.8, 1.8]
     : [1.75, 1.75, 1.75];
 
   // MOBILE VIEW (single column)
@@ -110,7 +129,12 @@ export default function RootOverlay({ cluster, onClose }) {
           />
         </div>
 
-        <ClusterCarousel images={visibleImages} onClose={onClose} />
+        <ClusterCarousel
+          images={visibleImages}
+          startIndex={safeIndex}
+          onIndexChange={setIndexClamped}
+          onClose={onClose}
+        />
       </div>
     );
   }
@@ -169,35 +193,23 @@ export default function RootOverlay({ cluster, onClose }) {
         />
 
       {/* Right: Carousel */}
-      <div
-        className="media-pane"
-        style={{
-          position: 'relative',
-          flex: '0 0 50vw',
-          height: '100%',
-          backgroundColor: '#000000',
-          color: 'white',
-          padding: '2rem',
-          overflowY: 'auto',
-          zIndex: 101,
-        }}
-      >
+      <div className="media-pane" style={overlayPaneStyle}>
                 {/* Controlled on desktop/tablet so arrows & drag stay in sync */}
         <ClusterCarousel
           images={visibleImages}
-          index={wrap(index)}
-          onIndexChange={setIndex}
+          index={safeIndex}
+          onIndexChange={setIndexClamped}
           onClose={onClose}
+          showDotsDesktop={false}
         />
 
-        {/* Desktop arrows (looping) */}
         <PaginationArrows
           className="in-pane"
-          index={wrap(index)}
+          index={safeIndex}
           total={urls.length}
-          onPrev={() => setIndex((i) => wrap(i - 1))}
-          onNext={() => setIndex((i) => wrap(i + 1))}
-          loop
+          onPrev={() => setIndexClamped((i) => i - 1)}
+          onNext={() => setIndexClamped((i) => i + 1)}
+          onDotClick={setIndexClamped}
         />
       </div>
     </div>

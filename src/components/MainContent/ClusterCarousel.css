@@ -86,3 +86,31 @@
     height: 75vh;
   }
 }
+/* === Sliding strip layout === */
+
+.carousel-strip-viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;          /* frame */
+  position: relative;
+}
+
+.carousel-strip {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  transition: transform 0.4s ease-in-out;  /* smooth slide on index change */
+}
+
+.carousel-slide {
+  flex: 0 0 100%;            /* each slide takes full viewport width */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-slide.single {
+  /* for the "No media" case */
+  color: #aaa;
+}

@@ -7,29 +7,41 @@ import PenumbraCluster from "../MainContent/PenumbraCluster";
 import MetaInfo from "../UI/MetaInfo";
 import PaginationArrows from "../UI/PaginationArrows";
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
+import { overlayPaneStyle } from "./overlayStyles";
 
 export default function PenumbraOverlay({ cluster, onClose }) {
   const { isMobile, isTablet } = useScreenSize();
   const diagRef = useRef(null);
   const visibleImages = useMemo(() => {
-    const arr = cluster?.images ?? [];
-    return arr.filter((item) => {
-      if (!item) return false;
-      if (typeof item === "string") return true;
-      return !item.hidden;
-    });
-  }, [cluster]);
-  const urls = useMemo(() => {
-    return visibleImages
-      .map((it) => (typeof it === "string" ? it : it?.url || it?.src || it?.image || it?.path || null))
+    return (cluster?.images ?? [])
+      .filter((a) => a && !a.hidden && !a.type) // exclude hidden + videos
+      .map((a) => {
+        const url = a.url || a.full || a.thumb;
+        return url ? { ...a, url } : null;
+      })
       .filter(Boolean);
-  }, [visibleImages]);
+  }, [cluster]);
+  const total = visibleImages.length;
 
   const [index, setIndex] = useState(0);
-  const wrap = useCallback((i) => {
-    const len = urls.length || 1;
-    return ((i % len) + len) % len;
-  }, [urls.length]);
+    const clampIndex = useCallback(
+      (value) => {
+        if (total === 0) return 0;
+        return Math.min(Math.max(value, 0), total - 1);
+      },
+      [total]
+    );
+
+  const setIndexClamped = useCallback(
+    (update) => {
+      setIndex((prev) => {
+        const next = typeof update === "function" ? update(prev) : update;
+        return clampIndex(next);
+      });
+    },
+    [clampIndex]
+  );
+  const safeIndex = clampIndex(index);
 
   useEffect(() => {
     const y = window.scrollY || document.documentElement.scrollTop || 0;
@@ -86,7 +98,12 @@ export default function PenumbraOverlay({ cluster, onClose }) {
           />
         </div>
 
-        <ClusterCarousel images={visibleImages} onClose={onClose} />
+        <ClusterCarousel
+          images={visibleImages}
+          startIndex={safeIndex}
+          onIndexChange={setIndexClamped}
+          onClose={onClose}
+        />
       </div>
     );
   }
@@ -131,33 +148,22 @@ export default function PenumbraOverlay({ cluster, onClose }) {
         )}
       />
 
-      <div
-        className="media-pane"
-        style={{
-          position: "relative",
-          flex: "0 0 50vw",
-          height: "100%",
-          backgroundColor: "#000000",
-          color: "white",
-          padding: "2rem",
-          overflowY: "auto",
-          zIndex: 101,
-        }}
-      >
+      <div className="media-pane" style={overlayPaneStyle}>
         <ClusterCarousel
           images={visibleImages}
-          index={wrap(index)}
-          onIndexChange={setIndex}
+          index={safeIndex}
+          onIndexChange={setIndexClamped}
           onClose={onClose}
+          showDotsDesktop={false}
         />
 
         <PaginationArrows
           className="in-pane"
-          index={wrap(index)}
-          total={urls.length}
-          onPrev={() => setIndex((i) => wrap(i - 1))}
-          onNext={() => setIndex((i) => wrap(i + 1))}
-          loop
+          index={safeIndex}
+          total={total}
+          onPrev={() => setIndexClamped((i) => i - 1)}
+          onNext={() => setIndexClamped((i) => i + 1)}
+          onDotClick={setIndexClamped}
         />
       </div>
     </div>

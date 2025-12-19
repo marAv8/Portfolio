@@ -1,4 +1,4 @@
-// src/components/Overlays/HatsOverlay.jsx
+// src/components/Overlays/EarlyAliensOverlay.jsx
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 
@@ -9,6 +9,7 @@ import MetaInfo from '../UI/MetaInfo';
 import HatsCluster from '../MainContent/HatsCluster';
 import PreloadMask from '../Effects/PreloadMask';
 import PaginationArrows from '../UI/PaginationArrows';
+import { overlayPaneStyle } from "./overlayStyles";
 
 const deg = (d) => THREE.MathUtils.degToRad(d);
 
@@ -30,9 +31,17 @@ export default function HatsOverlay({ cluster, onClose }) {
   const title = cluster?.title ?? 'Hats';
   const year  = cluster?.year ?? '2023';
   const desc  = cluster?.subtitle ?? cluster?.description ?? 'hat blends, and evolutions';
+  
+  const images = useMemo(
+    () =>
+      (cluster?.assets ?? [])
+        .map(a => ({
+          url: a.full || a.mid || a.thumb || null,
+        }))
+        .filter(a => a.url),
+    [cluster?.assets]
+);
 
-  // assets -> images
-  const images = useMemo(() => (cluster?.assets ?? []).map(a => ({ url: a.url })), [cluster?.assets]);
 
   // urls for pagination total
   const urls = useMemo(() => (images ?? [])
@@ -41,10 +50,24 @@ export default function HatsOverlay({ cluster, onClose }) {
 
   // shared index + wrap (desktop/tablet)
   const [index, setIndex] = React.useState(0);
-  const wrap = React.useCallback((i) => {
-    const len = urls.length || 1;
-    return ((i % len) + len) % len;
-  }, [urls.length]);
+  const clampIndex = React.useCallback(
+    (value) => {
+      if (urls.length === 0) return 0;
+      const max = urls.length - 1;
+      return Math.min(Math.max(value, 0), max);
+    },
+    [urls.length]
+  );
+  const setIndexClamped = React.useCallback(
+    (update) => {
+      setIndex((prev) => {
+        const next = typeof update === "function" ? update(prev) : update;
+        return clampIndex(next);
+      });
+    },
+    [clampIndex]
+  );
+  const safeIndex = clampIndex(index);
 
   // 🔒 freeze page scroll while overlay open; restore on close
   useEffect(() => {
@@ -66,7 +89,7 @@ export default function HatsOverlay({ cluster, onClose }) {
 
   // Dynamic scale per device (same shape as Early)
   const clusterScale = isMobile ? [1.25, 1.25, 1.25]
-    : isTablet ? [2.2, 2.2, 2.2]
+    : isTablet ? [3, 3, 3]
     : [3.1, 3.1, 3.1];
 
   // ----------------- MOBILE -----------------
@@ -99,7 +122,12 @@ export default function HatsOverlay({ cluster, onClose }) {
           />
         </div>
 
-        <ClusterCarousel images={images} onClose={onClose} />
+        <ClusterCarousel
+          images={images}
+          startIndex={safeIndex}
+          onIndexChange={setIndexClamped}
+          onClose={onClose}
+        />
       </div>
     );
   }
@@ -141,32 +169,21 @@ export default function HatsOverlay({ cluster, onClose }) {
       />
 
       {/* Right: media pane */}
-      <div
-        className="media-pane"
-        style={{
-          position: 'relative',
-          flex: '0 0 50vw',
-          height: '100%',
-          backgroundColor: '#000',
-          color: 'white',
-          padding: '2rem',
-          overflowY: 'auto',
-          zIndex: 101,
-        }}
-      >
+      <div className="media-pane" style={overlayPaneStyle}>
         <ClusterCarousel
           images={images}
-          index={wrap(index)}
-          onIndexChange={setIndex}
+          index={safeIndex}
+          onIndexChange={setIndexClamped}
           onClose={onClose}
+          showDotsDesktop={false}
         />
         <PaginationArrows
           className="in-pane"
-          index={wrap(index)}
+          index={safeIndex}
           total={urls.length}
-          onPrev={() => setIndex((i) => wrap(i - 1))}
-          onNext={() => setIndex((i) => wrap(i + 1))}
-          loop
+          onPrev={() => setIndexClamped((i) => i - 1)}
+          onNext={() => setIndexClamped((i) => i + 1)}
+          onDotClick={setIndexClamped}
         />
       </div>
     </div>

@@ -1,12 +1,10 @@
-import React, {
-  useMemo,
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import "./ClusterCarousel.css";
 import PaginationDots from "../UI/PaginationDots";
+import { useScreenSize } from "../../contexts/ScreenSizeContext";
+import MobileSlidingStrip from "../Mobile/MobileSlidingStrip";
+import TabletSlidingStrip from "../Mobile/TabletSlidingStrip";
+import DesktopSlidingStrip from "../Carousel/DesktopSlidingStrip";
 
 export default function ClusterCarousel({
   images = [],
@@ -14,8 +12,9 @@ export default function ClusterCarousel({
   index: controlled,
   onIndexChange,
   onClose,
+  showDotsDesktop = false, // dots are shown on mobile by default; desktop/tablet can opt in
 }) {
-  const wrapperRef = useRef(null);
+  const { isMobile, isTablet } = useScreenSize();
 
   /* ----------------------------
    * Normalize image/video entries
@@ -50,26 +49,26 @@ export default function ClusterCarousel({
   /* ----------------------------
    * Index helpers
    * ---------------------------- */
-  const wrap = useCallback((i, len) => {
+  const clamp = useCallback((i, len) => {
     if (!len) return 0;
-    return ((i % len) + len) % len;
+    return Math.max(0, Math.min(i, len - 1));
   }, []);
 
   const isControlled = controlled != null;
   const [internal, setInternal] = useState(() =>
-    wrap(startIndex || 0, entries.length)
+    clamp(startIndex || 0, entries.length)
   );
-  const idx = isControlled ? wrap(controlled, entries.length) : internal;
+  const idx = isControlled ? clamp(controlled, entries.length) : internal;
 
   useEffect(() => {
     if (!isControlled)
-      setInternal(wrap(startIndex || 0, entries.length));
-  }, [startIndex, entries.length, isControlled, wrap]);
+      setInternal(clamp(startIndex || 0, entries.length));
+  }, [startIndex, entries.length, isControlled, clamp]);
 
   const setIndex = useCallback(
     (update) => {
       const nextRaw = typeof update === "function" ? update(idx) : update;
-      const next = wrap(nextRaw, entries.length);
+      const next = clamp(nextRaw, entries.length);
       if (isControlled) {
         onIndexChange?.(next);
       } else {
@@ -77,41 +76,8 @@ export default function ClusterCarousel({
         onIndexChange?.(next);
       }
     },
-    [idx, wrap, entries.length, isControlled, onIndexChange]
+    [idx, clamp, entries.length, isControlled, onIndexChange]
   );
-
-  const next = useCallback(() => setIndex((i) => i + 1), [setIndex]);
-  const prev = useCallback(() => setIndex((i) => i - 1), [setIndex]);
-
-  /* ----------------------------
-   * Swipe detection
-   * ---------------------------- */
-  const startX = useRef(null);
-
-  const onPointerDown = (e) => {
-    startX.current = e.clientX ?? e.touches?.[0]?.clientX ?? null;
-  };
-
-  const onPointerUp = (e) => {
-    const sx = startX.current;
-    const ex = e.clientX ?? e.changedTouches?.[0]?.clientX ?? null;
-    startX.current = null;
-    if (sx == null || ex == null) return;
-    const dx = ex - sx;
-    if (Math.abs(dx) > 40) (dx < 0 ? next : prev)();
-  };
-
-  /* ----------------------------
-   * Current media entry
-   * ---------------------------- */
-  const current =
-    entries[idx] || {
-      src: "",
-      isVideo: false,
-      poster: undefined,
-    };
-
-  const { src, isVideo, poster } = current;
 
   /* ----------------------------
    * Render
@@ -124,47 +90,37 @@ export default function ClusterCarousel({
         </button>
       )}
 
-      <div
-        className="carousel-image-container"
-        onMouseDown={onPointerDown}
-        onMouseUp={onPointerUp}
-        onTouchStart={onPointerDown}
-        onTouchEnd={onPointerUp}
-      >
-        <div className="image-wrapper" ref={wrapperRef}>
-          {entries.length ? (
-            isVideo ? (
-              <video
-                key={src}
-                className="carousel-image"
-                src={src}
-                autoPlay
-                muted
-                loop
-                playsInline
-                poster={poster}
-              />
-            ) : (
-              <img
-                key={src}
-                className="carousel-image"
-                src={src}
-                alt=""
-                draggable={false}
-              />
-            )
-          ) : (
-            <div className="mc-empty">No media found</div>
-          )}
-        </div>
-      </div>
+    <div className="carousel-image-container">
+      {isMobile ? (
+        <MobileSlidingStrip
+          items={entries}
+          index={idx}
+          onIndexChange={setIndex}
+        />
+      ) : isTablet ? (
+        <TabletSlidingStrip
+          items={entries}
+          index={idx}
+          onIndexChange={setIndex}
+        />
+      ) : (
+        <DesktopSlidingStrip
+          items={entries}
+          index={idx}
+          onIndexChange={setIndex}
+        />
+      )}
+    </div>
 
-      <PaginationDots
-        index={idx}
-        total={entries.length}
-        onDotClick={setIndex}
-        maxVisible={9}
-      />
+
+      {(isMobile || showDotsDesktop) && (
+        <PaginationDots
+          index={idx}
+          total={entries.length}
+          onDotClick={setIndex}
+          maxVisible={9}
+        />
+      )}
     </div>
   );
 }

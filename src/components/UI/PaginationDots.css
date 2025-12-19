@@ -6,6 +6,29 @@
   align-items: center;
   width: 100%;
   margin-top: clamp(16px, 2.5vh, 28px); /* 🔥 adds a bit more space under the image */
+  font-family: "Open Sans", sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .pagination-dots-container {
+    margin-top: 12px;
+  }
+}
+
+/* Inside arrow bar: tighten spacing */
+.pagination-arrows .pagination-dots-container {
+  width: auto !important;
+  margin: 0 !important;
+}
+.pagination-arrows .dots-viewport {
+  gap: 8px;
+  padding: 0 6px;
 }
 
 /* Make sure the viewport doesn’t squash dots */

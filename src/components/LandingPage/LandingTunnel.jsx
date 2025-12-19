@@ -3,36 +3,17 @@ import React, { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { assets, conceptAssets } from '../../assets/assetData';
+import { LANDING_IMAGES } from "./landingMedia";
+
+// Collect thumbnails directly from public/media/concepts/*/thumbnails
+const IMAGE_POOL = LANDING_IMAGES;
+
+
 
 const pseudoRandom = (seed) => {
   const x = Math.sin(seed * 9993.123) * 43758.5453;
   return x - Math.floor(x);
 };
-
-const collectImageUrls = () => {
-  const urls = new Set();
-
-  const normalize = (entry) => entry?.thumb || entry?.url || entry?.full || entry?.originalUrl;
-
-  assets.forEach((asset) => {
-    if (asset?.isVideo) return;
-    const src = normalize(asset);
-    if (src && !/\.(mp4|webm)$/i.test(src)) urls.add(src);
-  });
-
-  conceptAssets.forEach((cluster) => {
-    const list = cluster.images || cluster.assets || [];
-    list.forEach((entry) => {
-      const src = normalize(entry);
-      if (src && !/\.(mp4|webm)$/i.test(src)) urls.add(src);
-    });
-  });
-
-  return Array.from(urls);
-};
-
-const IMAGE_POOL = collectImageUrls();
 
 function useImageTextureMap(urls) {
   const textures = useTexture(urls);
@@ -53,17 +34,26 @@ function ImageRing({ radius, images, textureMap, startAngle = 0 }) {
   if (!images.length || !textureMap.size) return null;
 
   const angleStep = (Math.PI * 2) / images.length;
+  const jitterForIndex = (i, salt = 0) => {
+    // deterministic pseudo-random in [-1, 1]
+    const s = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+    return (s - Math.floor(s)) * 2 - 1;
+  };
 
   return (
     <group>
       {images.map((url, idx) => {
         const tex = textureMap.get(url);
         if (!tex) return null;
-        const angle = startAngle + idx * angleStep;
+        const baseAngle = startAngle + idx * angleStep;
+        const aJitter = jitterForIndex(idx, radius * 2) * angleStep * 0.35; // angular jitter
+        const angle = baseAngle + aJitter;
+        const rJitter = jitterForIndex(idx, radius) * 6; // widen radial jitter range
+        const localRadius = radius + rJitter;
 
         return (
           <group key={`${url}-${idx}`} rotation={[0, 0, angle]}>
-            <mesh position={[radius, 0, 0]} rotation={[0, Math.PI / 2, -Math.PI / 2]}>
+            <mesh position={[localRadius, 0, 0]} rotation={[0, Math.PI / 2, -Math.PI / 2]}>
               <planeGeometry args={[30, 30]} />
               <meshBasicMaterial map={tex} toneMapped={false} side={THREE.DoubleSide} />
             </mesh>

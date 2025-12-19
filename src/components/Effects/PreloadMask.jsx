@@ -33,6 +33,11 @@ const VARIANTS = {
     mid:  'rgba(245,185,227,0.74)',
     glow: 'rgba(200,146,255,0.65)' 
   },
+  lumen: {
+    core: 'rgba(160, 195, 228, 1)',
+    mid:  'rgba(106, 133, 165, 0.72)',
+    glow: 'rgba(120, 160, 198, 0.6)',
+  },
 };
 
 export default function PreloadMask({ duration = 3000, variant = 'warm', size = 46 }) {

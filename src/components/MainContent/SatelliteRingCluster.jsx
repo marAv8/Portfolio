@@ -87,6 +87,13 @@ const PARTICLE_COLOR_POOL = [
     s: baseScale * scaleMul,
     config: { tension: 170, friction: 18 },
   }));
+useEffect(() => {
+  if (assets?.length) {
+    console.log(`[${id}] assets:`, assets.length, 'first:', assets[0]);
+  } else {
+    console.warn(`[${id}] NO ASSETS`);
+  }
+}, [id, assets]);
 
   useEffect(() => {
     if (isMobile) return; // desktop/tablet only

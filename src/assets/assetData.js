@@ -1,325 +1,220 @@
+// src/assets/conceptAssets.js
+
 import { abyssAssets, earlyAliensAssets, penumbraAssets } from './assetsLeft';
 import { hatsAssets, getLumenAll } from './assetsRight';
 
-// Turn "/media/foo.png" => "/media/foo_512.webp" and "/media/foo_1600.webp"
-const toVariantUrls = (url) => {
-  if (typeof url !== 'string') return { thumb: url, full: url };
-  const dot = url.lastIndexOf('.');
-  if (dot < 0) return { thumb: url, full: url };
-  const base = url.slice(0, dot);
-  return {
-    thumb: `${base}_512.webp`,
-    full:  `${base}_1600.webp`,
+/* -------------------------------------------------
+   Variant helper (EXPLICIT, no guessing)
+-------------------------------------------------- */
+
+const CLUSTERS_WITH_MID = new Set(['Root']);
+
+const makeImage = ({ cluster, name }) => {
+  const base = {
+    thumb: `/media/concepts/${cluster}/thumbnails/${name}_512.webp`,
+    full:  `/media/concepts/${cluster}/full/${name}_1600.webp`,
   };
+
+  if (CLUSTERS_WITH_MID.has(cluster)) {
+    base.mid = `/media/concepts/${cluster}/mid/${name}_1024.webp`;
+  }
+
+  return base;
 };
 
-const rawAssets = [
-  { url: '/media/CeremonyStriation.png', size: [40, 40] },
-  { url: '/media/Post.mp4', size: [150, 100], manualPosition: [-300, -600, -300], isVideo: true },
-  { url: '/media/72.png', size: [50, 70] },
-  { url: '/media/73.png', size: [50, 50] },
-  { url: '/media/74.png', size: [50, 50] },
-  { url: '/media/Beauty.png', size: [40, 90] },
-  { url: '/media/EarlyAlien.png', size: [50, 50] },
-  { url: '/media/Anna.png', size: [70, 80], manualPosition: [-100, 180, -100] },
-  { url: '/media/McQueenBlue.png', size: [60, 95] },
-  { url: '/media/OrientalCastle.png', size: [100, 40], manualPosition: [200, -180, -200] },
-  { url: '/media/freak.JPEG', size: [50, 50] },
-  { url: '/media/BougMuse.png', size: [120, 120] },
-  { url: '/media/THREE.png', size: [40, 40] },
-  { url: '/media/CaucP.jpg', size: [60, 60] },
-  { url: '/media/3Trans.png', size: [50, 50] },
-  { url: '/media/CeremonyNefertiti.png', size: [70, 70] },
-  { url: '/media/Doll.png', size: [40, 40] },
-  { url: '/media/NetMask.jpg', size: [50, 50] },
-  { url: '/media/BrutDigital.png', size: [40, 40] },
-  { url: '/media/THREE4.png', size: [40, 40] },
-  { url: '/media/ArtBelow.png', size: [40, 40] },
-  { url: '/media/Survalance.png', size: [70, 70], manualPosition: [0, 50, -100] },
-  { url: '/media/ayaInverse.png', size: [50, 70], manualPosition: [200, -50, -250] },
-  { url: '/media/aya3.png', size: [60, 84] },
-  { url: '/media/moon.png', size: [55, 45], manualPosition: [0, -100, -200] },
-  { url: '/media/bougHeadP.png', size: [50, 90] },
-  // { url: '/media/orchidPearl.png', size: [50, 50] },
-  { url: '/media/OrientalTropicCastle.png', size: [20, 20], manualPosition: [-150, -100, -300] },
-  { url: '/media/decimA.png', size: [40, 40] },
-  { url: '/media/MuseHalo.jpg', size: [50, 50] },
-  { url: '/media/pom.mp4', size: [50, 50], isVideo: true },
-  { url: '/media/portal.mp4', size: [50, 50], isVideo: true },
-  { url: '/media/Castle.mp4', size: [50, 80], isVideo: true },
-  { url: '/media/Praying.mp4', size: [50, 50], manualPosition: [0, -200, -300], isVideo: true },
-  { url: '/media/Clouds.mp4', size: [60, 60], manualPosition: [0, -300, -300], isVideo: true },
-  { url: '/media/taksim.mp4', size: [140, 50], isVideo: true },
-];
-
-const CAMERA_Z = 150;
-const BASE_Z = -200;
-const baseDist = Math.abs(BASE_Z - CAMERA_Z);
-
-function sizeMultiplierFor(z) {
-  return baseDist / Math.abs(z - CAMERA_Z);
-}
-
-const DEPTH_LAYERS = [
-  { z: -100, size: sizeMultiplierFor(-100), speed: 10 },
-  { z: -250, size: sizeMultiplierFor(-250), speed: 8 },
-  { z: -350, size: sizeMultiplierFor(-350), speed: 6 },
-];
-
-const SPREAD_RADIUS = 450;
-const Y_STRETCH = 1.5;
-const JITTER = 60;
-
-const STACK_COUNT = 1; // how many vertical stacks to make
-const STACK_SPACING = 600; // vertical spacing between stacks
-
-export const assets = [];
-
-for (let s = 0; s < STACK_COUNT; s++) {
-  rawAssets.forEach((asset, i) => {
-    const layer = DEPTH_LAYERS[i % DEPTH_LAYERS.length];
-    const [rawW, rawH] = asset.size;
-
-    let position;
-
-    if (asset.manualPosition) {
-      position = [
-        asset.manualPosition[0],
-        asset.manualPosition[1] + s * STACK_SPACING,
-        asset.manualPosition[2],
-      ];
-    } else {
-      const angle = (i / rawAssets.length) * Math.PI * 2;
-      let x = Math.cos(angle) * SPREAD_RADIUS;
-      let y = Math.sin(angle) * SPREAD_RADIUS * Y_STRETCH + s * STACK_SPACING;
-      let z = layer.z;
-
-      x += ((Math.sin(i * 12.9898) * 43758.5453) % 1 - 0.5) * JITTER;
-      y += ((Math.cos(i * 78.233) * 12345.6789) % 1 - 0.5) * JITTER;
-      z += ((Math.sin(i * 999) * 12345) % 1 - 0.5) * 100;
-
-      position = [x, y, z];
-    }
-
-    const size = [rawW * layer.size, rawH * layer.size];
-    const speed = 10;
-
-    // Use small thumbs for images in the scatter; leave videos untouched
-    const isImg = !asset.isVideo;
-    const v = isImg ? toVariantUrls(asset.url) : {};
-    const displayUrl = isImg ? v.thumb : asset.url;
-
-    assets.push({
-      url: displayUrl,                    
-      full: isImg ? v.full : undefined,
-      originalUrl: asset.url,  
-      isVideo: asset.isVideo || false,
-      size,
-      position,
-      speed,
-    });
-  });
-}
-
-// Root Cluster Digital Stones (Ring A)
-const centerA = [-0.9, 0.52, 1.5];
-const radiusA = 0.52;
-const countA  = 6;
-const angleStepA = (Math.PI * 2) / countA;
-
-const makeVariantEntry = (path) => {
-  const { thumb, full } = toVariantUrls(path);
-  return { thumb, full, url: full || thumb };
-};
-
-const digitalStones = Array.from({ length: countA }).map((_, i) => {
-  const id = i + 1;
-  const angle = i * angleStepA;
-  const x = centerA[0] + Math.sin(angle) * radiusA;
-  const z = centerA[2] + Math.cos(angle) * radiusA;
-  const variants = makeVariantEntry(`/media/concepts/Root/PDigital${id}.png`);
-  return {
-    ...variants,
-    hidden: id !== 6,
-    position: [x, centerA[1], z],
-    rotation: [0, angle, 0],
-    scale: [0.60, 0.8, 1],
-    isFloating: true,
-    ring: 'A',
-  };
-});
-// Ring B — uses your six images, shown in a matching circle next to Ring A
-const ringBFileNames = [
-  'boug2.png',
-  'boug3.png',
-  'BougMuse3.png',
-  'BougMuse4.png',
-  'niji.webp',
-  'TriptychTwin.png',
-];
-
-// Ring B — identical settings, shifted RIGHT
-const centerB = [0.9, 0.52, 1.5];    // symmetrical to centerA
-const radiusB = 0.52;                // same radius as A
-const angleStepB = (Math.PI * 2) / ringBFileNames.length;
-
-const digitalStonesB = ringBFileNames.map((name, i) => {
-  const a = i * angleStepB;
-  const x = centerB[0] + Math.sin(a) * radiusB;
-  const z = centerB[2] + Math.cos(a) * radiusB;
-  const variants = makeVariantEntry(`/media/concepts/Root/${name}`);
-  return {
-    ...variants,
-    hidden: name !== 'boug2.png',
-    position: [x, centerB[1], z],
-    rotation: [0, a, 0],            // face outward
-    scale: [0.60, 0.8, 1],          // gentle editorial scale
-    panelColor: '#F5EFE6',          // optional: warm tone like Ring A
-    panelOpacity: 0.9,
-    isFloating: true,
-    ring: 'B',
-  };
-});
+/* -------------------------------------------------
+   ROOT — static cluster images (1024 is intentional)
+-------------------------------------------------- */
 
 const ROOT_STATIC_IMAGES = [
   {
-    url: '/media/concepts/Root/RootAya_1024.webp',
-    thumb: '/media/concepts/Root/RootAya_1024.webp',
-    full: '/media/concepts/Root/RootAya_1600.webp',
+    id: 'RootAya',
+    ...makeImage({ cluster: 'Root', name: 'RootAya' }),
     position: [0, 1.4, -2],
     scale: [2.4, 2.8, 1],
     rotation: [0, 0, 0],
     title: 'Root Sketches, 2022',
   },
   {
-    url: '/media/concepts/Root/Root3_1024.webp',
-    thumb: '/media/concepts/Root/Root3_1024.webp',
-    full: '/media/concepts/Root/Root3_1600.webp',
+    id: 'Root3',
+    ...makeImage({ cluster: 'Root', name: 'Root3' }),
     position: [1.5, 0.9, -0.5],
     scale: [1.4, 1.7, 1],
-    rotation: [0, 0, 0],
     hidden: true,
   },
   {
-    url: '/media/concepts/Root/RootPray_1024.webp',
-    thumb: '/media/concepts/Root/RootPray_1024.webp',
-    full: '/media/concepts/Root/RootPray_1600.webp',
+    id: 'RootPray',
+    ...makeImage({ cluster: 'Root', name: 'RootPray' }),
     position: [2.5, 0.6, 0],
     scale: [0.9, 1.2, 1],
-    rotation: [0, 0, 0],
     hidden: true,
   },
   {
-    url: '/media/concepts/Root/RootProblem_1024.webp',
-    thumb: '/media/concepts/Root/RootProblem_1024.webp',
-    full: '/media/concepts/Root/RootProblem_1600.webp',
+    id: 'RootProblem',
+    ...makeImage({ cluster: 'Root', name: 'RootProblem' }),
     position: [-1.5, 0.9, -0.5],
     scale: [1.2, 1.7, 1],
-    rotation: [0, 0, 0],
     hidden: true,
   },
   {
-    url: '/media/concepts/Root/RootProblemInverse_1024.webp',
-    thumb: '/media/concepts/Root/RootProblemInverse_1024.webp',
-    full: '/media/concepts/Root/RootProblemInverse_1600.webp',
+    id: 'RootProblemInverse',
+    ...makeImage({ cluster: 'Root', name: 'RootProblemInverse' }),
     position: [-2.5, 0.65, 0],
     scale: [1, 1.3, 1],
-    rotation: [0, 0, 0],
     hidden: true,
   },
-
 ];
+
+/* -------------------------------------------------
+   ROOT — rotating digital stones (Ring A)
+-------------------------------------------------- */
+
+const centerA = [-0.9, 0.52, 1.5];
+const radiusA = 0.52;
+const countA  = 6;
+const angleStepA = (Math.PI * 2) / countA;
+
+const digitalStones = Array.from({ length: countA }).map((_, i) => {
+  const id = i + 1;
+  const angle = i * angleStepA;
+
+  const x = centerA[0] + Math.sin(angle) * radiusA;
+  const z = centerA[2] + Math.cos(angle) * radiusA;
+
+  return {
+    id: `PDigital${id}`,
+    ...makeImage({ cluster: 'Root', name: `PDigital${id}` }),
+    hidden: id !== 6,
+    position: [x, centerA[1], z],
+    rotation: [0, angle, 0],
+    scale: [0.6, 0.8, 1],
+    isFloating: true,
+    ring: 'A',
+  };
+});
+
+/* -------------------------------------------------
+   ROOT — rotating stones (Ring B)
+-------------------------------------------------- */
+
+const ringBNames = [
+  'boug2',
+  'boug3',
+  'BougMuse3',
+  'BougMuse4',
+  'niji',
+  'TriptychTwin',
+];
+
+const centerB = [0.9, 0.52, 1.5];
+const radiusB = 0.52;
+const angleStepB = (Math.PI * 2) / ringBNames.length;
+
+const digitalStonesB = ringBNames.map((name, i) => {
+  const angle = i * angleStepB;
+  const x = centerB[0] + Math.sin(angle) * radiusB;
+  const z = centerB[2] + Math.cos(angle) * radiusB;
+
+  return {
+    id: name,
+    ...makeImage({ cluster: 'Root', name }),
+    hidden: name !== 'boug2',
+    position: [x, centerB[1], z],
+    rotation: [0, angle, 0],
+    scale: [0.6, 0.8, 1],
+    isFloating: true,
+    ring: 'B',
+    panelColor: '#F5EFE6',
+    panelOpacity: 0.9,
+  };
+});
+
+/* -------------------------------------------------
+   CONCEPT CLUSTERS (no layout changes)
+-------------------------------------------------- */
 
 export const conceptAssets = [
   {
     id: 'cluster-root',
-    flickerColor: '#fff2cc',
-    layout: 'default',
-    position: [0, 0, 0],
     title: 'Root Sketches',
     subtitle: 'Celestial Bodies',
     year: '2022',
+    layout: 'default',
+    flickerColor: '#fff2cc',
+    position: [0, 0, 0],
     images: [
       ...ROOT_STATIC_IMAGES,
       ...digitalStones,
       ...digitalStonesB,
     ],
   },
+
   {
     id: 'cluster-lumen',
     title: 'Lumen',
     subtitle: 'Surveillance and astral echoes',
     year: '2024',
     label: 'Lumen',
+    maskVariant: 'lumen',
     images: getLumenAll(),
   },
+
   {
     id: 'cluster-penumbra',
-    flickerColor: '#c6baff',
+    title: 'Penumbra',
+    subtitle: 'Iridescent portraits suspended between light and shadow',
+    year: '2023',
     label: 'Penumbra',
     layout: 'penumbra',
     maskVariant: 'penumbra',
-    position: [0, 0, 0],
-    title: 'Penumbra ',
-    subtitle: 'Iridescent portraits suspended between light and shadow',
-    year: '2023',
-    palette: {
-      base: '#0b0916',
-      rim: '#201e37',
-      inner: '#2f2444',
-      accent: '#f6c899',
-      glow: '#8f6dff',
-    },
-    extrusion: {
-      outerRadius: 6.1,
-      innerRadius: 2.1,
-      accentRadius: 3.2,
-      thickness: 0.55,
-      clusterLift: 1.05,
-      clusterScale: 0.95,
-    },
- // Use originals until variants are generated
+    flickerColor: '#c6baff',
     images: penumbraAssets,
-    // Overlay should open on muse (first)
-    defaultStartKey: '/media/concepts/LeftScreen/Penumbra/muse.png',
+    defaultStartKey: '/media/concepts/Penumbra/thumbnails/muse_512.webp',
   },
+
   {
     id: 'cluster-abyss',
-    flickerColor: '#d32f2f',
-    label: 'Abyss',
     title: 'Abyss',
-    year: '2023',
     subtitle: 'Study in red light and mirrored forms',
+    year: '2023',
+    label: 'Abyss',
+    flickerColor: '#d32f2f',
     position: [-3, -1, -2],
     scale: [1, 1, 1],
-    images: abyssAssets,  
+    images: abyssAssets,
   },
+
   {
     id: 'cluster-hats',
-    label: 'Hats',
     title: 'Headpieces & Hats',
+    subtitle: 'Variations of hats / coverings',
     year: '2023',
-    subtitle: 'Variations of hats/coverings',
+    label: 'Hats',
     assets: hatsAssets,
   },
-{
-  id: 'cluster-early-aliens',
-  label: 'Protoforms',
-  title: 'Protoforms',
-  subtitle: 'MJ v3 portrait artifacts, 13-panel ring',
-  year: '2022',
-  scale: [1,1,1],
-  assets: earlyAliensAssets,  
-}
+
+  {
+    id: 'cluster-early-aliens',
+    title: 'Protoforms',
+    subtitle: 'MJ v3 portrait artifacts',
+    year: '2022',
+    label: 'Protoforms',
+    assets: earlyAliensAssets,
+  },
 ];
+
+/* -------------------------------------------------
+   PENUMBRA GEOMETRY DATA (unchanged)
+-------------------------------------------------- */
+
 export const penumbraData = {
-  id: "penumbra",
+  id: 'penumbra',
   colors: {
-    bgStart: "#E7DBF1", 
-    bgMid:   "#D6D1D2",
-    bgEnd:   "#595556",
-    tint:    "#9C9690",
-    accent:  "#F1E7FF",
+    bgStart: '#E7DBF1',
+    bgMid:   '#D6D1D2',
+    bgEnd:   '#595556',
+    tint:    '#9C9690',
+    accent:  '#F1E7FF',
   },
   radius: 5,
   height: 2.8,

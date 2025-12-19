@@ -6,6 +6,7 @@ import PaginationArrows from "../UI/PaginationArrows";
 import LumenCluster from "../MainContent/LumenCluster";
 import { getLumenAll } from "../../assets/assetsRight";
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
+import { overlayPaneStyle } from "./overlayStyles";
 
 export default function LumenOverlay({ onClose }) {
   const { isMobile, isTablet } = useScreenSize();
@@ -13,16 +14,41 @@ export default function LumenOverlay({ onClose }) {
 
   // gather all images once
   const images = useMemo(
-    () => getLumenAll().filter((item) => typeof item === "string" || !item?.hidden),
+    () =>
+      getLumenAll()
+        .filter((item) => typeof item === "string" || !item?.hidden)
+        .map((it) => {
+          if (typeof it === "string") return { src: it };
+          const url = it.url || it.full || it.thumb;
+          return url ? { ...it, url } : null;
+        })
+        .filter(Boolean),
     []
   );
-  const urls = useMemo(() => images.map((it) => it.url).filter(Boolean), [images]);
+  const urls = useMemo(
+    () => images.map((it) => it.url || it.src).filter(Boolean),
+    [images]
+  );
 
   const [index, setIndex] = useState(0);
-  const wrap = useCallback((i) => {
-    const len = urls.length || 1;
-    return ((i % len) + len) % len;
-  }, [urls.length]);
+  const clampIndex = useCallback(
+    (value) => {
+      if (urls.length === 0) return 0;
+      const max = urls.length - 1;
+      return Math.min(Math.max(value, 0), max);
+    },
+    [urls.length]
+  );
+  const setIndexClamped = useCallback(
+    (update) => {
+      setIndex((prev) => {
+        const next = typeof update === "function" ? update(prev) : update;
+        return clampIndex(next);
+      });
+    },
+    [clampIndex]
+  );
+  const safeIndex = clampIndex(index);
 
   // body lock (same behavior as PenumbraOverlay)
   useEffect(() => {
@@ -55,6 +81,7 @@ export default function LumenOverlay({ onClose }) {
     title: "Lumen",
     year: "2024",
     subtitle: "Surveillance and astral echoes",
+    maskVariant: "lumen",
   };
 
   if (isMobile) {
@@ -70,7 +97,13 @@ export default function LumenOverlay({ onClose }) {
           overflow: "hidden",
         }}
       >
-        <ClusterCarousel images={images} index={wrap(index)} onIndexChange={setIndex} onClose={onClose} />
+        <ClusterCarousel
+          images={images}
+          index={safeIndex}
+          onIndexChange={setIndexClamped}
+          onClose={onClose}
+          showDotsDesktop={false}
+        />
       </div>
     );
   }
@@ -91,43 +124,32 @@ export default function LumenOverlay({ onClose }) {
         cluster={clusterMeta}
         scale={clusterScale}
         metaThemeClass="meta-theme-warm"
-        maskVariant="early"
-        camera={{ fov: 54, position: [0, 2, 24] }}
+        maskVariant="lumen"
+        camera={{ fov: 54, position: [0, -1, 24] }}
         render3D={() => (
           // Reuse the *same* cluster component; no hit-plane in overlay
-          <group position={[0, 3.5, 0]} scale={[1, 1, 1]}>
+          <group position={[0, 6.5, 0]} scale={[1.3, 1.3, 1.3]}>
             <LumenCluster interactive={false} setControlsEnabled={() => {}} controlsRef={null} onActivate={() => {}} />
           </group>
         )}
       />
 
       {/* RIGHT: media only — no MetaInfo here */}
-      <div
-        className="media-pane"
-        style={{
-          position: "relative",
-          flex: "0 0 50vw",
-          height: "100%",
-          backgroundColor: "#000",
-          color: "white",
-          padding: "2rem",
-          overflowY: "auto",
-          zIndex: 101,
-        }}
-      >
+      <div className="media-pane" style={overlayPaneStyle}>
         <ClusterCarousel
           images={images}
-          index={wrap(index)}
-          onIndexChange={setIndex}
+          index={safeIndex}
+          onIndexChange={setIndexClamped}
           onClose={onClose}
+          showDotsDesktop={false}
         />
         <PaginationArrows
           className="in-pane"
-          index={wrap(index)}
+          index={safeIndex}
           total={urls.length}
-          onPrev={() => setIndex((i) => wrap(i - 1))}
-          onNext={() => setIndex((i) => wrap(i + 1))}
-          loop
+          onPrev={() => setIndexClamped((i) => i - 1)}
+          onNext={() => setIndexClamped((i) => i + 1)}
+          onDotClick={setIndexClamped}
         />
       </div>
     </div>

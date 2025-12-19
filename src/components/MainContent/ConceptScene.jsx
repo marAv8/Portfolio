@@ -9,8 +9,8 @@ import React, {
   Suspense,
   useCallback,
 } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, AdaptiveDpr, PerformanceMonitor, Html } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, PerspectiveCamera, AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
 import { getConceptLayout, COMPOSITION } from "../../config/conceptsLayout";
@@ -36,14 +36,23 @@ const AbyssOverlay       = React.lazy(() => import("../Overlays/AbyssOverlay"));
 const EarlyAliensOverlay = React.lazy(() => import("../Overlays/EarlyAliensOverlay"));
 const HatsOverlay        = React.lazy(() => import("../Overlays/HatsOverlay"));
 
-const DEFAULT_HINT_LINES = ["Click & drag to view", "Click to open"];
-const LABEL_CONFIG = {
-  root: { offset: [10, 10, 0], align: "right" },
-  penumbra: { offset: [-30, 10, 0], align: "left" },
-  lumen: { offset: [10, -1, 0], align: "right" },
-  abyss: { offset: [-30, 10, 0], align: "left" },
-  hats: { offset: [-9, 15, 0], align: "center" },
-  early: { offset: [-9, 18, 0], align: "center" },
+const METADATA_PER_CLUSTER = {
+  default: { dx: -8, dy: 12, dz: 0 },
+  "cluster-root": { dx: -8, dy: 12, dz: 0 },
+  "cluster-penumbra": { dx: -8, dy: 12, dz: 0 },
+  "cluster-lumen": { dx: -8, dy: -2, dz: 0 },
+  "cluster-abyss": { dx: -8, dy: 18, dz: 0 },
+  "cluster-early-aliens": { dx: -8, dy: 12, dz: 0 },
+  "cluster-hats": { dx: -8, dy: 12, dz: 0 },
+};
+const METADATA_OFFSET = [-8, 12, 0];
+const SCREEN_ANCHORS = {
+  "cluster-root": { x: -140, y: -50 },
+  "cluster-penumbra": { x: -140, y: -50 },
+  "cluster-lumen": { x: -140, y: -50 },
+  "cluster-abyss": { x: -140, y: -50 },
+  "cluster-hats": { x: -140, y: -50 },
+  "cluster-early-aliens": { x: -140, y: -50 },
 };
 
 const addVec = (a = [0, 0, 0], b = [0, 0, 0]) => [
@@ -52,11 +61,53 @@ const addVec = (a = [0, 0, 0], b = [0, 0, 0]) => [
   (a[2] ?? 0) + (b[2] ?? 0),
 ];
 
-console.log({
-  LumenOverlay, LumenCluster,
-  RootOverlay, PenumbraOverlay, AbyssOverlay, EarlyAliensOverlay,
-});
+function MetadataProjector({ entries = [], enabled, onUpdate }) {
+  const entriesRef = useRef(entries);
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
 
+  const temp = useRef(new THREE.Vector3());
+  const lastRef = useRef(null);
+
+  useFrame(({ camera, size }) => {
+    if (!enabled) return;
+    const list = entriesRef.current;
+    if (!list || list.length === 0) return;
+    const next = {};
+    list.forEach((entry) => {
+      if (!entry?.position) return;
+      temp.current.set(...entry.position).project(camera);
+      const x = (temp.current.x * 0.5 + 0.5) * size.width;
+      const y = (-temp.current.y * 0.5 + 0.5) * size.height;
+      next[entry.id] = { x, y };
+    });
+    const last = lastRef.current;
+    let changed = !last;
+    if (!changed) {
+      const keys = Object.keys(next);
+      const lastKeys = Object.keys(last);
+      if (keys.length !== lastKeys.length) {
+        changed = true;
+      } else {
+        for (const key of keys) {
+          const prev = last[key];
+          const cur = next[key];
+          if (!prev || Math.abs(prev.x - cur.x) > 0.5 || Math.abs(prev.y - cur.y) > 0.5) {
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
+    if (changed) {
+      lastRef.current = next;
+      onUpdate(next);
+    }
+  });
+
+  return null;
+}
 
 // --- Focus camera on a group by name ---------------------------------
 function frameDistanceForBox({ box, camera, fovDeg = camera.fov, fit = 1.2 }) {
@@ -103,15 +154,16 @@ function DesktopConceptScene({ isTablet }) {
       if (!info) return;
       const layoutNode = layout?.clusters?.[key];
       if (!layoutNode?.position) return;
-      const label = LABEL_CONFIG[key] || { offset: [0, 8, 0], align: "center" };
+
+      const cfg = METADATA_PER_CLUSTER[info.id] || METADATA_PER_CLUSTER.default || { dx: -8, dy: 12, dz: 0 };
+      const offset = [cfg.dx, cfg.dy, cfg.dz];
+
       entries.push({
         id: info.id,
         title: info.title || info.id,
         subtitle: info.subtitle,
         year: info.year,
-        position: addVec(layoutNode.position, label.offset),
-        align: label.align || "center",
-        hintLines: DEFAULT_HINT_LINES,
+        position: addVec(layoutNode.position, offset),
       });
     };
 
@@ -128,6 +180,7 @@ function DesktopConceptScene({ isTablet }) {
   const [activeClusterId, setActiveClusterId] = useState(null);
   const [lite, setLite] = useState(false);
   const [hoveredClusterId, setHoveredClusterId] = useState(null);
+  const [metadataScreens, setMetadataScreens] = useState({});
 
   useEffect(() => {
     if (!hoveredClusterId) return;
@@ -139,6 +192,10 @@ function DesktopConceptScene({ isTablet }) {
   useEffect(() => {
     if (activeClusterId) setHoveredClusterId(null);
   }, [activeClusterId]);
+
+  useEffect(() => {
+    if (isTablet) setMetadataScreens({});
+  }, [isTablet]);
 
   // Desktop-only preload mask (kept simple)
   const [maskVisible, setMaskVisible] = useState(true);
@@ -221,11 +278,34 @@ function DesktopConceptScene({ isTablet }) {
 
 
  // Absolute camera: use exactly what conceptsLayout.js describes
- const [framing] = useState(() => ({
-   target:  layout.camera?.target   ?? [0, -6, 0],
-   camPos:  layout.camera?.position ?? [0, 4, 41],
-   fov:     layout.camera?.fov      ?? 44,
- }));
+ const computeFraming = useCallback(() => {
+   const baseTarget = layout.camera?.target ?? [0, -6, 0];
+   const basePos = layout.camera?.position ?? [0, 4, 41];
+   const baseFov = layout.camera?.fov ?? 44;
+
+   // Visual composition fix: slightly widen framing on narrower desktop viewports (no CSS/layout changes).
+   const aspect =
+     typeof window !== "undefined" && window.innerHeight > 0
+       ? window.innerWidth / window.innerHeight
+       : 16 / 9;
+
+   if (!isTablet && aspect < 1.45) {
+     // Push camera back a bit; keep everything else unchanged.
+     return {
+       target: baseTarget,
+       camPos: [basePos[0], basePos[1], basePos[2] + 3.5],
+       fov: baseFov,
+     };
+   }
+
+   return { target: baseTarget, camPos: basePos, fov: baseFov };
+ }, [isTablet, layout.camera]);
+
+ const [framing, setFraming] = useState(() => computeFraming());
+
+ useEffect(() => {
+   setFraming(computeFraming());
+ }, [computeFraming]);
 
   const hoveredHint = !activeClusterId && hoveredClusterId
     ? clusterHints.find((entry) => entry.id === hoveredClusterId)
@@ -306,13 +386,13 @@ useEffect(() => {
 const lumenLayout = layout?.clusters?.lumen;
 return (
 <section 
-  className="relative h-screen w-full overflow-hidden concept-gradient-bg"
+  className="concept-page"
 >
         <Canvas
         dpr={[1, Math.min(1.75, window.devicePixelRatio || 1)]}
-        gl={{ antialias: !lite, powerPreference: lite ? "low-power" : "high-performance", alpha: true }}
+        gl={{ antialias: !lite, powerPreference: lite ? "low-power" : "high-performance", alpha: false }}
         shadows={false}
-        style={{ width: "100%", height: "100%", background: "transparent" }}
+        style={{ width: "100%", height: "100%", background: "black" }}
         onPointerDown={() => setIsPointerDown(true)}
       >
         <PerformanceMonitor onDecline={() => setLite(true)} />
@@ -456,32 +536,51 @@ return (
           />
         </Suspense>
 
-        {activeHint && (
-          <Html
-            position={activeHint.position}
-            wrapperClass={`concept-hint-wrapper concept-hint-wrapper--${activeHint.align}`}
-          >
-            <div className={`concept-hint concept-hint--${activeHint.align}`}>
-              <p className="concept-hint__title">{activeHint.title}</p>
-              {activeHint.subtitle ? (
-                <p className="concept-hint__subtitle">{activeHint.subtitle}</p>
-              ) : null}
-              {activeHint.year ? (
-                <p className="concept-hint__year">{activeHint.year}</p>
-              ) : null}
-              {Array.isArray(activeHint.hintLines)
-                ? activeHint.hintLines.map((line, idx) => (
-                    <p key={idx} className="concept-hint__hint">
-                      {line}
-                    </p>
-                  ))
-                : (
-                    <p className="concept-hint__hint">{activeHint.hintLines || activeHint.hint}</p>
-                  )}
-            </div>
-          </Html>
+        {!isTablet && (
+          <MetadataProjector
+            entries={clusterHints}
+            enabled={!isTablet}
+            onUpdate={setMetadataScreens}
+          />
         )}
       </Canvas>
+
+      <div className="concept-ui-overlay" aria-hidden="true">
+        {!isTablet && activeHint && metadataScreens[activeHint.id] && (() => {
+          const anchor = SCREEN_ANCHORS[activeHint.id] || { x: 0, y: 0 };
+          const coords = metadataScreens[activeHint.id];
+          return (
+            <div
+              className="cluster-metadata-card"
+              style={{
+                left: `${coords.x + anchor.x}px`,
+                top: `${coords.y + anchor.y}px`,
+              }}
+            >
+              <div className="cluster-metadata-title">{activeHint.title}</div>
+              {activeHint.year ? (
+                <div className="cluster-metadata-year">{activeHint.year}</div>
+              ) : null}
+              {activeHint.subtitle ? (
+                <div className="cluster-metadata-desc">{activeHint.subtitle}</div>
+              ) : null}
+            </div>
+          );
+        })()}
+
+        {!isTablet && activeHint && (
+          <div className="cluster-protip">
+            <span>click &amp; drag to view</span>
+            <span>click to open</span>
+          </div>
+        )}
+
+        {isTablet && (
+          <div className="cluster-protip cluster-protip--tablet">
+            Tap a cluster to open
+          </div>
+        )}
+      </div>
 
       {/* Desktop/Tablet overlays */}
         {activeClusterId && (
