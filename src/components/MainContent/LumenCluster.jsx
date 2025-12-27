@@ -22,10 +22,13 @@ export default function LumenCluster({
   visibleSub = "all",         // "earth" | "moon" | "space" | "all"
   onHoverChange = () => {},
   interactive = false,        // enable Abyss-style main hit plane
+  hoverable = true,           // allow hover scale even when interactions are off
   subHitplanes = false,       // optional tiny per-sub hit planes (off by default)
 }) {
   const screenCtx = useScreenSize?.();
   const isMobile = screenCtx?.isMobile ?? false;
+  const isTablet = screenCtx?.isTablet ?? false;
+  const isDesktop = !isMobile && !isTablet;
 
   const rootRef   = useRef(null);  // whole cluster wrapper
   const breathRef = useRef(null);  // breathing/hover scaling group
@@ -37,7 +40,7 @@ export default function LumenCluster({
   const earthRef = useRef(null);
 
   const [hovered, setHovered] = useState(false);
-  useCursor(hovered);
+  useCursor(interactive && hovered);
   useEffect(() => {
     onHoverChange?.(id, hovered);
   }, [hovered, id, onHoverChange]);
@@ -77,9 +80,9 @@ export default function LumenCluster({
   // expand only when we’re actually hovered and not dragging
   const draggingRefForBreath = useRef(false);
   useEffect(() => {
-    const mul = hovered && !draggingRefForBreath.current ? HOVER : 1;
+    const mul = isDesktop && hovered && !draggingRefForBreath.current ? HOVER : 1;
     api.start({ s: BASE.map((v) => v * mul) });
-  }, [hovered, api, BASE]);
+  }, [hovered, api, BASE, isDesktop]);
 
   // ─────────────────────────────────────────────────────────────
   // MAIN billboard hit-plane (Abyss parity)
@@ -236,7 +239,7 @@ export default function LumenCluster({
   return (
     <group ref={rootRef} name="Lumen" position={position} rotation={rotation} scale={scale}>
       {/* MAIN INTERACTIVE BILLBOARD (Abyss-style) */}
-      {interactive && (
+      {hoverable && (
         <mesh
           ref={planeRef}
           scale={[PLANE_W, PLANE_H, 1]}
@@ -245,14 +248,15 @@ export default function LumenCluster({
           onPointerOver={(e) => {
             e.stopPropagation();
             setHovered(true);
-            document.body.style.cursor = "pointer";
+            if (interactive) document.body.style.cursor = "pointer";
           }}
           onPointerOut={(e) => {
             e.stopPropagation();
             setHovered(false);
-            document.body.style.cursor = "default";
+            if (interactive) document.body.style.cursor = "default";
           }}
           onPointerDown={(e) => {
+            if (!interactive) return;
             e.stopPropagation();
             movedRef.current = false;
             startRef.current = [e.clientX, e.clientY];
@@ -269,6 +273,7 @@ export default function LumenCluster({
             document.body.style.cursor = "grabbing";
           }}
           onPointerMove={(e) => {
+            if (!interactive) return;
             e.stopPropagation();
             if (isMobile || !draggingRef.current || !rootRef.current) return;
             const [lx, ly] = lastRef.current;
@@ -283,6 +288,7 @@ export default function LumenCluster({
             lastRef.current = [e.clientX, e.clientY];
           }}
           onPointerUp={(e) => {
+            if (!interactive) return;
             e.stopPropagation();
             if (!isMobile) {
               draggingRef.current = false;
@@ -297,6 +303,7 @@ export default function LumenCluster({
           }}
           onPointerLeave={(e) => {
             e.stopPropagation();
+            if (!interactive) { setHovered(false); return; }
             if (!isMobile && draggingRef.current) {
               draggingRef.current = false;
               draggingRefForBreath.current = false;
