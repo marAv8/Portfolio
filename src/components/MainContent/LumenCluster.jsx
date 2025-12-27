@@ -273,6 +273,8 @@ export default function LumenCluster({
             document.body.style.cursor = "grabbing";
           }}
           onPointerMove={(e) => {
+            // some embedded browsers (e.g., social in-app) can skip pointerover; keep hover alive on move
+            if (!hovered) setHovered(true);
             if (!interactive) return;
             e.stopPropagation();
             if (isMobile || !draggingRef.current || !rootRef.current) return;
