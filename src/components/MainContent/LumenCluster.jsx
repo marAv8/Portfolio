@@ -124,7 +124,7 @@ export default function LumenCluster({
   const tmpDir   = useMemo(() => new THREE.Vector3(), []);
   const tmpPos   = useMemo(() => new THREE.Vector3(), []);
   useFrame(({ camera }) => {
-    if (!interactive) return;
+    if (!hoverable) return; // still billboard the hover plane even when drag/click is disabled
     const g = rootRef.current, p = planeRef.current;
     if (!g || !p) return;
     g.updateWorldMatrix(true, false);
