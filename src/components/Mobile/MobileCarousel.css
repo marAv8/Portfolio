@@ -8,8 +8,9 @@
   --section-gap: 56px;
   --meta-gap: 14px;
   --dots-gap: 12px;
-  --preview-height: 68svh;
-  --carousel-height: 44svh;
+  --vh: 1vh;
+  --preview-height: calc(var(--vh) * 68);
+  --carousel-height: calc(var(--vh) * 44);
 }
 
 .concept-mobile {
@@ -38,7 +39,7 @@
   background: #050505;
   border-radius: 0.85rem;
   width: min(96vw, 980px);
-  height: var(--preview-height);
+  height: var(--preview-height, 60vh);
   overflow: hidden;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -52,12 +53,6 @@
   font-weight: 300;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-}
-
-@supports not (height: 60svh) {
-  .concept-mobile__preview {
-    height: 60vh;
-  }
 }
 
 .concept-mobile__canvas {
@@ -146,17 +141,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: var(--carousel-height);
-  touch-action: pan-x;
+  height: var(--carousel-height, 44vh);
+  touch-action: pan-y;
   overscroll-behavior: contain;
   position: relative;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-@supports not (height: 44svh) {
-  .mi-viewport {
-    height: 44vh;
-  }
 }
 
 .mi-gutter {

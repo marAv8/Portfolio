@@ -32,11 +32,15 @@ export default function SlidingStripBase({
   const dragging = useRef(false);
   const startX = useRef(0);
   const lastX = useRef(0);
+  const startY = useRef(0);
+  const lastY = useRef(0);
+  const axisLock = useRef(null);
   const velocity = useRef(0);
   const dragStartOffset = useRef(0);
 
   const THRESH_SWIPE = 70;
   const VELOCITY_CUTOFF = 0.35;
+  const AXIS_LOCK_THRESHOLD = 8;
   const TRANSITION_MS = 760;
   const TRANSITION_EASE = "cubic-bezier(0.18, 0.85, 0.32, 1)";
 
@@ -45,6 +49,13 @@ export default function SlidingStripBase({
     if (event.touches?.[0]) return event.touches[0].clientX;
     if (event.changedTouches?.[0]) return event.changedTouches[0].clientX;
     return event.clientX ?? 0;
+  };
+
+  const getClientY = (event) => {
+    if (!event) return 0;
+    if (event.touches?.[0]) return event.touches[0].clientY;
+    if (event.changedTouches?.[0]) return event.changedTouches[0].clientY;
+    return event.clientY ?? 0;
   };
 
   const applyTransform = (track, offset) => {
@@ -168,11 +179,16 @@ export default function SlidingStripBase({
     if (!isInteractive || total === 0) return;
     const x = getClientX(event);
     if (Number.isNaN(x)) return;
+    const y = getClientY(event);
+    if (Number.isNaN(y)) return;
 
     stopAnimation();
     dragging.current = true;
     startX.current = x;
     lastX.current = x;
+    startY.current = y;
+    lastY.current = y;
+    axisLock.current = null;
     velocity.current = 0;
 
     const track = trackRef.current;
@@ -189,10 +205,31 @@ export default function SlidingStripBase({
     if (!dragging.current || !isInteractive) return;
     const x = getClientX(event);
     if (Number.isNaN(x)) return;
+    const y = getClientY(event);
+    if (Number.isNaN(y)) return;
 
     const dx = x - startX.current;
+    const dy = y - startY.current;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    if (!axisLock.current && (absX > AXIS_LOCK_THRESHOLD || absY > AXIS_LOCK_THRESHOLD)) {
+      axisLock.current = absX > absY ? "x" : "y";
+      if (axisLock.current === "y") {
+        dragging.current = false;
+        return;
+      }
+    }
+
+    if (axisLock.current !== "x") {
+      lastX.current = x;
+      lastY.current = y;
+      return;
+    }
+
     velocity.current = x - lastX.current;
     lastX.current = x;
+    lastY.current = y;
 
     const track = trackRef.current;
     if (!track) return;
@@ -205,6 +242,7 @@ export default function SlidingStripBase({
   const onEnd = (event) => {
     if (!dragging.current || !isInteractive) return;
     dragging.current = false;
+    axisLock.current = null;
 
     const dx = lastX.current - startX.current;
     const v = velocity.current;

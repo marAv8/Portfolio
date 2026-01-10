@@ -268,6 +268,16 @@ function buildSections(lumenAssets) {
 export default function ConceptSceneMobile() {
   const lumenAssets = useMemo(() => getLumenAll(), []);
   const sections = useMemo(() => buildSections(lumenAssets), [lumenAssets]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const setVh = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+    setVh();
+    window.addEventListener("orientationchange", setVh);
+    return () => window.removeEventListener("orientationchange", setVh);
+  }, []);
   const initialKeys = useMemo(
     () => sections.slice(0, 1).map((section) => section.key),
     [sections]
