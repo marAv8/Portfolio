@@ -18,7 +18,7 @@ export default function ContactModal({ onClose }) {
 
         <div className="contact-modal-content">
           <div className="contact-modal-header">
-            <a href="mailto:mara.vetis8@gmail.com" className="contact-modal-email">
+            <a href="mailto:maravetis0@gmail.com" className="contact-modal-email">
               maravetis0@gmail.com
             </a>
             {/* <p className="contact-modal-location">Los Angeles, CA</p> */}
