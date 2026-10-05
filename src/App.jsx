@@ -18,7 +18,7 @@ const ConceptScene = React.lazy(() =>
 function AppContent() {
   const location = useLocation();
   const [showContact, setShowContact] = useState(false);
-  const isConceptPage = location.pathname === '/concepts';
+  const isConceptPage = location.pathname.replace(/\/+$/, '') === '/clusters';
   const isLanding = location.pathname === '/';
 
   return (
@@ -39,12 +39,16 @@ function AppContent() {
           element={<CanvasScene />}
         />
         <Route
-          path="/concepts"
+          path="/clusters"
           element={
             <Suspense fallback={<div style={{ color:'#aaa', padding:16 }}>Loading scene…</div>}>
               <ConceptScene />
             </Suspense>
           }
+        />
+        <Route
+          path="/concepts"
+          element={<Navigate to={{ pathname: '/clusters', search: location.search, hash: location.hash }} replace />}
         />
       </Routes>
     </ModalContext.Provider>

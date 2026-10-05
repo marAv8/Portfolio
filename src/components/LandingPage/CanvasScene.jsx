@@ -48,7 +48,7 @@ export default function CanvasScene({ modalOpen = false }) {
       <div className="canvas-column">
         <ModalContext.Provider value={modalOpen}>
           <div className="landing-cta-overlay">
-            <Link to="/concepts" className="nav-pill landing-cta-pill">
+            <Link to="/clusters" className="nav-pill landing-cta-pill">
               <span className="nav-link glow">Clusters</span>
             </Link>
           </div>

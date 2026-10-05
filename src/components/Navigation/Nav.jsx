@@ -18,7 +18,7 @@ export default function Nav({ onContactClick, isConceptPage = false }) {
     <nav className={`nav-container ${layoutClass}`}>
        <div className="nav-pill">
         <Link
-          to={isConceptPage ? "/" : "/concepts"}
+          to={isConceptPage ? "/" : "/clusters"}
           className="nav-link glow"
           style={{ "--delay": "0.5s" }}
         >
