@@ -1,6 +1,5 @@
 // src/components/Navigation/Nav.jsx
 import React from "react";
-import { Link } from "react-router-dom";
 import "./Nav.css";
 import { useScreenSize } from "../../contexts/ScreenSizeContext";
 
@@ -16,16 +15,6 @@ export default function Nav({ onContactClick, isConceptPage = false }) {
 
   return (
     <nav className={`nav-container ${layoutClass}`}>
-       <div className="nav-pill">
-        <Link
-          to={isConceptPage ? "/" : "/clusters"}
-          className="nav-link glow"
-          style={{ "--delay": "0.5s" }}
-        >
-          {isConceptPage ? "Images" : "Clusters"}
-        </Link>
-      </div> 
-
       <div className="nav-pill">
         <button
           onClick={onContactClick}

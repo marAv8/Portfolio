@@ -5,7 +5,6 @@ import { ScreenSizeProvider } from './contexts/ScreenSizeContext';
 import { ModalContext } from './contexts/ModalContext';
 import Nav from './components/Navigation/Nav';
 import ContactModal from './components/ContactInfo/ContactModal';
-import CanvasScene from './components/LandingPage/CanvasScene';
 import './App.css';
 
 // LAZY: split the heavy concepts scene
@@ -18,28 +17,18 @@ const ConceptScene = React.lazy(() =>
 function AppContent() {
   const location = useLocation();
   const [showContact, setShowContact] = useState(false);
-  const isConceptPage = location.pathname.replace(/\/+$/, '') === '/clusters';
-  const isLanding = location.pathname === '/';
 
   return (
     <ModalContext.Provider value={showContact}>
-      {!isLanding && (
-        <>
-          <Nav
-            onContactClick={() => setShowContact(true)}
-            isConceptPage={isConceptPage}
-          />
-          {showContact && <ContactModal onClose={() => setShowContact(false)} />}
-        </>
-      )}
+      <Nav
+        onContactClick={() => setShowContact(true)}
+        isConceptPage
+      />
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
 
       <Routes>
         <Route
           path="/"
-          element={<CanvasScene />}
-        />
-        <Route
-          path="/clusters"
           element={
             <Suspense fallback={<div style={{ color:'#aaa', padding:16 }}>Loading scene…</div>}>
               <ConceptScene />
@@ -47,8 +36,12 @@ function AppContent() {
           }
         />
         <Route
+          path="/clusters"
+          element={<Navigate to={{ pathname: '/', search: location.search, hash: location.hash }} replace />}
+        />
+        <Route
           path="/concepts"
-          element={<Navigate to={{ pathname: '/clusters', search: location.search, hash: location.hash }} replace />}
+          element={<Navigate to={{ pathname: '/', search: location.search, hash: location.hash }} replace />}
         />
       </Routes>
     </ModalContext.Provider>
