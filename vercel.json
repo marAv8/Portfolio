@@ -1,5 +1,7 @@
 {
     "rewrites": [
+      { "source": "/prototypes", "destination": "/prototypes/index.html" },
+      { "source": "/prototypes/", "destination": "/prototypes/index.html" },
       { "source": "/(.*)", "destination": "/" }
     ],
     "headers": [

@@ -17,7 +17,7 @@ export default function Nav({ onContactClick, isConceptPage = false }) {
     <nav className={`nav-container ${layoutClass}`}>
       <div className="nav-pill">
         <a
-          href="https://signal-desk-marina.vercel.app/prototypes.html"
+          href="/prototypes"
           className="nav-link glow"
           style={{ "--delay": "1.3s" }}
         >
